@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const shipmentRepository = require("../repository/shipmentRepository");
 const canadaPostService = require("./canadaPostService");
+const shipmozoService = require("./shipmozoService");
+const fedexService = require("./fedexService");
 
 const createShipment = async (payload) => {
     if (!payload.orderId) {
@@ -80,12 +82,44 @@ const deleteShipment = async (shipmentId) => {
 };
 
 const getRates = async (payload) => {
-    return canadaPostService.fetchRates({
-        pickupPincode: payload.pickupPincode,
-        deliveryPincode: payload.deliveryPincode,
-        weight: payload.weight,
-        cod: payload.cod
-    });
+    let shipmozoRates = [];
+    let canadaPostRates = [];
+    let fedexRates = [];
+
+    try {
+        shipmozoRates = await shipmozoService.fetchRates({
+            pickupPincode: payload.pickupPincode,
+            deliveryPincode: payload.deliveryPincode,
+            weight: payload.weight,
+            cod: payload.cod
+        });
+    } catch (error) {
+        console.error("Shipmozo fetch rates error:", error.message);
+    }
+
+    try {
+        canadaPostRates = await canadaPostService.fetchRates({
+            pickupPincode: payload.pickupPincode,
+            deliveryPincode: payload.deliveryPincode,
+            weight: payload.weight,
+            cod: payload.cod
+        });
+    } catch (error) {
+        console.error("Canada Post fetch rates error:", error.message);
+    }
+
+    try {
+        fedexRates = await fedexService.fetchRates({
+            pickupPincode: payload.pickupPincode,
+            deliveryPincode: payload.deliveryPincode,
+            weight: payload.weight,
+            cod: payload.cod
+        });
+    } catch (error) {
+        console.error("FedEx fetch rates error:", error.message);
+    }
+
+    return [...shipmozoRates, ...canadaPostRates, ...fedexRates];
 };
 
 const trackShipment = async (shipmentId) => {
@@ -107,7 +141,7 @@ const trackShipment = async (shipmentId) => {
         throw new Error("Tracking ID / AWB is not available for this shipment yet");
     }
 
-    return canadaPostService.trackShipment(shipment.awbNumber);
+    return fedexService.trackShipment(shipment.awbNumber);
 };
 
 const cancelShipment = async (shipmentId) => {
@@ -121,7 +155,7 @@ const cancelShipment = async (shipmentId) => {
         throw new Error("No AWB code linked. Cannot cancel un-booked shipment.");
     }
 
-    await canadaPostService.cancelShipmentOrder(shipment.orderId._id || shipment.orderId, shipment.awbNumber);
+    await fedexService.cancelShipmentOrder(shipment.orderId._id || shipment.orderId, shipment.awbNumber);
 
     await shipmentRepository.updateShipment(shipmentId, { status: "cancelled" });
 
@@ -138,7 +172,7 @@ const initiateReturn = async (shipmentId, returnData) => {
     const shipment = await shipmentRepository.findById(shipmentId);
     if (!shipment) throw new Error("Shipment not found");
 
-    const returnShipmentResult = await canadaPostService.createReturnShipmentOrder({
+    const returnShipmentResult = await fedexService.createReturnShipmentOrder({
         orderId: shipment.orderId._id || shipment.orderId,
         customerName: returnData.customerName || "Customer",
         customerPhone: returnData.customerPhone || "9876543210",

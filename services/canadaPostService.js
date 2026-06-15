@@ -312,7 +312,7 @@ async function createReturnShipmentOrder(orderDetails) {
     const isPickupCa = isCanadianPostalCode(orderDetails.pickupPincode);
 
     if (!headers || !isPickupCa) {
-        // Simulated/Mock mode fallback
+
         const randomAWB = "PR" + Math.floor(1000000000 + Math.random() * 9000000000) + "CA";
         return {
             success: true,

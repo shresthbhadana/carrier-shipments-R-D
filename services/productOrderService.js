@@ -1,6 +1,6 @@
 const productOrderRepository = require("../repository/productOrderRepository");
 const shipmentRepository = require("../repository/shipmentRepository");
-const canadaPostService = require("./canadaPostService");
+const fedexService = require("./fedexService");
 
 const createProductOrder = async (payload) => {
     if (!payload.userId) {
@@ -29,7 +29,7 @@ const createProductOrder = async (payload) => {
     }, 0);
 
     // 2. Fetch shipping rate from Shipmozo
-    const rates = await canadaPostService.fetchRates({
+    const rates = await fedexService.fetchRates({
         pickupPincode: payload.pickupPincode,
         deliveryPincode: payload.deliveryPincode,
         weight: payload.weight || 0.5,
@@ -70,7 +70,7 @@ const createProductOrder = async (payload) => {
     // 5. Create Shipment in Shipmozo
     let shipmentResult;
     try {
-        shipmentResult = await canadaPostService.createShipmentOrder({
+        shipmentResult = await fedexService.createShipmentOrder({
             orderId: order._id,
             customerName: payload.customerName,
             customerPhone: payload.customerPhone,
@@ -79,9 +79,8 @@ const createProductOrder = async (payload) => {
             courierName: courierName
         });
     } catch (shipmentError) {
-        console.error("Failed to book shipment on Canada Post:", shipmentError.message);
-        // We will fallback to a default created state to avoid breaking checkout,
-        // but mark the error details.
+        console.error("Failed to book shipment on FedEx:", shipmentError.message);
+       
         shipmentResult = {
             success: false,
             courierName,
@@ -91,7 +90,7 @@ const createProductOrder = async (payload) => {
         };
     }
 
-    // 6. Save Shipment in DB
+   
     const shipment = await shipmentRepository.createShipment({
         orderId: order._id,
         courierName: shipmentResult.courierName,
@@ -101,13 +100,11 @@ const createProductOrder = async (payload) => {
         status: shipmentResult.status
     });
 
-    // 7. Update order with shipment reference
     await productOrderRepository.updateOrder(order._id, {
         shipmentId: shipment._id,
         orderStatus: shipmentResult.trackingId ? "processing" : "pending"
     });
 
-    // Fetch the final updated order populated with user (matching previous repo findById populate behaviour)
     const finalOrder = await productOrderRepository.findById(order._id);
     return finalOrder;
 };

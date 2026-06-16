@@ -68,6 +68,10 @@ async function runTest() {
 
         if (shipmentId) {
             console.log("Associated Shipment ID:", shipmentId);
+            
+            console.log("\n=== TEST 3.5: GENERATING SHIPPING LABEL ===");
+            const labelUrl = await shipmentService.getLabel(shipmentId);
+            console.log("Label generated successfully! Public URL:", labelUrl);
         }
 
         console.log("\n=== TEST 3: TRACKING SHIPMENT ===");

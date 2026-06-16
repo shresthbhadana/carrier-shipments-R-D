@@ -51,6 +51,10 @@ router.get(
     shipmentController.trackShipment
 );
 
+router.get(
+    "/:id/label",
+    shipmentController.getLabel
+);
 
 router.post(
     "/:id/cancel",

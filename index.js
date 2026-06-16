@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 require("./models/userModel");
@@ -11,6 +12,7 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
+app.use("/labels", express.static(path.join(__dirname, "labels")));
 connectDB();
 app.use(
     "/api/orders",

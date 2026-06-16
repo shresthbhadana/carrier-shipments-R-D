@@ -126,6 +126,18 @@ const initiateReturn = async (req, res, next) => {
     }
 };
 
+const getLabel = async (req, res, next) => {
+    try {
+        const labelUrl = await shipmentService.getLabel(req.params.id);
+        res.status(200).json({
+            success: true,
+            data: { labelUrl }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     createShipment,
     getShipmentById,
@@ -135,5 +147,6 @@ module.exports = {
     getRates,
     trackShipment,
     cancelShipment,
-    initiateReturn
+    initiateReturn,
+    getLabel
 };

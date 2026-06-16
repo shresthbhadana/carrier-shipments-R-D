@@ -3,6 +3,8 @@ const shipmentRepository = require("../repository/shipmentRepository");
 const canadaPostService = require("./canadaPostService");
 const shipmozoService = require("./shipmozoService");
 const fedexService = require("./fedexService");
+const fs = require("fs");
+const path = require("path");
 
 const createShipment = async (payload) => {
     if (!payload.orderId) {
@@ -203,6 +205,41 @@ const initiateReturn = async (shipmentId, returnData) => {
     return returnShipment;
 };
 
+const getLabel = async (shipmentId) => {
+    const shipment = await shipmentRepository.findById(shipmentId);
+
+    if (!shipment) throw new Error("Shipment not found");
+    if (!shipment.awbNumber) throw new Error("AWB not found");
+
+    const dir = path.join(__dirname, "../labels");
+    const filename = `${shipment.awbNumber}.pdf`;
+    const filePath = path.join(dir, filename);
+    const labelUrl = `/labels/${filename}`;
+
+   
+    if (fs.existsSync(filePath)) {
+        if (!shipment.labelUrl) {
+            await shipmentRepository.updateShipment(shipmentId, { labelUrl });
+        }
+        return labelUrl;
+    }
+
+    const labelBuffer = await fedexService.getLabel(shipment.awbNumber);
+    if (!labelBuffer) throw new Error("Failed to fetch label from FedEx");
+
+    if (!fs.existsSync(dir)) {
+        await fs.promises.mkdir(dir, { recursive: true });
+    }
+
+   
+    await fs.promises.writeFile(filePath, labelBuffer);
+
+   
+    await shipmentRepository.updateShipment(shipmentId, { labelUrl });
+
+    return labelUrl;
+};
+
 module.exports = {
     createShipment,
     getShipmentById,
@@ -212,5 +249,6 @@ module.exports = {
     getRates,
     trackShipment,
     cancelShipment,
-    initiateReturn
+    initiateReturn,
+    getLabel
 };

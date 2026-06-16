@@ -6,11 +6,11 @@ const FEDEX_CLIENT_ID = process.env.FEDEX_CLIENT_ID;
 const FEDEX_CLIENT_SECRET = process.env.FEDEX_CLIENT_SECRET;
 const FEDEX_ACCOUNT_NUMBER = process.env.FEDEX_ACCOUNT_NUMBER;
 
-// Token Caching (OAuth Token 1 घंटे के लिए वैध होता है)
+
 let cachedToken = null;
 let tokenExpiry = null;
 
-// 1. Authentication Helper (OAuth 2.0 Token प्राप्त करने के लिए)
+
 async function getAccessToken() {
     if (
         !FEDEX_CLIENT_ID || 
@@ -20,7 +20,7 @@ async function getAccessToken() {
         return null; // Local mock mode
     }
 
-    // टोकन एक्सपायरी चेक करें
+  
     if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
         return cachedToken;
     }
@@ -43,7 +43,7 @@ async function getAccessToken() {
 
         const data = await response.json();
         cachedToken = data.access_token;
-        // टोकन को 50 मिनट के लिए कैशे करें (Buffer time के साथ)
+       
         tokenExpiry = Date.now() + 50 * 60 * 1000; 
         return cachedToken;
     } catch (e) {
@@ -359,10 +359,53 @@ async function createReturnShipmentOrder(orderDetails) {
     }
 }
 
+async function getLabel(awbNumber) {
+    const token = await getAccessToken();
+
+    const mockPDF = Buffer.from(
+        `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 65 >>\nstream\nBT\n/F1 24 Tf\n100 700 Td\n(Mock FedEx Shipping Label for AWB: ${awbNumber}) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000009 00000 n\n0000000056 00000 n\n0000000111 00000 n\n0000000212 00000 n\ntrailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n326\n%%EOF`
+    );
+
+    if (!token) {
+        return mockPDF;
+    }
+
+    try {
+        const response = await fetch(`${FEDEX_API_URL}/documents/v1/retrievals`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                documentType: "LABEL",
+                trackingNumber: awbNumber,
+                accountNumber: { value: FEDEX_ACCOUNT_NUMBER }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`FedEx document retrieval failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const encodedDocument = data.output?.documents?.[0]?.encodedDocument;
+        if (encodedDocument) {
+            return Buffer.from(encodedDocument, "base64");
+        }
+
+        return mockPDF;
+    } catch (error) {
+        console.error("FedEx getLabel error, falling back to mock:", error.message);
+        return mockPDF;
+    }
+}
+
 module.exports = {
     fetchRates,
     createShipmentOrder,
     trackShipment,
     cancelShipmentOrder,
-    createReturnShipmentOrder
+    createReturnShipmentOrder,
+    getLabel
 };

@@ -1,9 +1,12 @@
-const dotenv = require("dotenv");
-dotenv.config();
-
 const SHIPMOZO_API_URL = process.env.SHIPMOZO_API_URL || "https://shipping-api.com/app/api/v1";
 const SHIPMOZO_PUBLIC_KEY = process.env.SHIPMOZO_PUBLIC_KEY;
 const SHIPMOZO_PRIVATE_KEY = process.env.SHIPMOZO_PRIVATE_KEY;
+
+function checkMockAllowed(serviceName) {
+    if (process.env.MOCK_CARRIERS !== "true") {
+        throw new Error(`Credentials missing for ${serviceName}. Fail-fast in production. Set MOCK_CARRIERS=true in .env to allow mock data fallback.`);
+    }
+}
 
 function getAuthHeaders() {
     if (!SHIPMOZO_PUBLIC_KEY || !SHIPMOZO_PRIVATE_KEY || SHIPMOZO_PUBLIC_KEY === "your_public_key") {
@@ -39,6 +42,7 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
     const headers = getAuthHeaders();
 
     if (!headers) {
+        checkMockAllowed("Shipmozo");
         // Fallback mock shipping rates for local development
         const distanceFactor = Math.abs(parseInt(pickupPincode) - parseInt(deliveryPincode)) % 100;
         const basePrice = 40 + (weight * 20) + (distanceFactor * 0.5);
@@ -130,6 +134,7 @@ async function createShipmentOrder(orderDetails) {
     const headers = getAuthHeaders();
 
     if (!headers) {
+        checkMockAllowed("Shipmozo");
         const randomAWB = "SMZ" + Math.floor(1000000000 + Math.random() * 9000000000);
         return {
             success: true,
@@ -224,6 +229,7 @@ async function trackShipment(awbNumber) {
     const headers = getAuthHeaders();
 
     if (!headers) {
+        checkMockAllowed("Shipmozo");
         return {
             success: true,
             data: {
@@ -267,6 +273,7 @@ async function cancelShipmentOrder(orderId, awbNumber) {
     const headers = getAuthHeaders();
 
     if (!headers) {
+        checkMockAllowed("Shipmozo");
         return { success: true, order_id: orderId, reference_id: orderId };
     }
 
@@ -276,7 +283,7 @@ async function cancelShipmentOrder(orderId, awbNumber) {
             headers,
             body: JSON.stringify({
                 order_id: String(orderId),
-                awb_number: Number(awbNumber)
+                awb_number: String(awbNumber)
             })
         });
 
@@ -303,6 +310,7 @@ async function createReturnShipmentOrder(orderDetails) {
     const headers = getAuthHeaders();
 
     if (!headers) {
+        checkMockAllowed("Shipmozo");
         const randomAWB = "RTN" + Math.floor(1000000000 + Math.random() * 9000000000);
         return {
             success: true,
@@ -395,10 +403,49 @@ async function createReturnShipmentOrder(orderDetails) {
     }
 }
 
+async function getLabel(awbNumber) {
+    const headers = getAuthHeaders();
+
+    const mockPDF = Buffer.from(
+        `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 68 >>\nstream\nBT\n/F1 24 Tf\n100 700 Td\n(Mock Shipmozo Shipping Label for AWB: ${awbNumber}) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000009 00000 n\n0000000056 00000 n\n0000000111 00000 n\n0000000212 00000 n\ntrailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n329\n%%EOF`
+    );
+
+    if (!headers) {
+        checkMockAllowed("Shipmozo");
+        return mockPDF;
+    }
+
+    try {
+        const response = await fetch(`${SHIPMOZO_API_URL}/get-label?awb_number=${awbNumber}`, {
+            method: "GET",
+            headers
+        });
+
+        if (!response.ok) {
+            throw new Error(`Shipmozo document retrieval failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const labelUrl = data.data?.label_url;
+        if (labelUrl) {
+            const pdfResponse = await fetch(labelUrl);
+            if (pdfResponse.ok) {
+                const arrayBuffer = await pdfResponse.arrayBuffer();
+                return Buffer.from(arrayBuffer);
+            }
+        }
+        return mockPDF;
+    } catch (error) {
+        console.error("Shipmozo getLabel error, falling back to mock:", error.message);
+        return mockPDF;
+    }
+}
+
 module.exports = {
     fetchRates,
     createShipmentOrder,
     trackShipment,
     cancelShipmentOrder,
-    createReturnShipmentOrder
+    createReturnShipmentOrder,
+    getLabel
 };

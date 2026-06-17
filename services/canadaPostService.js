@@ -1,10 +1,27 @@
-const dotenv = require("dotenv");
-dotenv.config();
-
 const CANADA_POST_API_URL = process.env.CANADA_POST_API_URL || "https://ct.soa-gw.canadapost.ca";
 const CANADA_POST_USERNAME = process.env.CANADA_POST_USERNAME;
 const CANADA_POST_PASSWORD = process.env.CANADA_POST_PASSWORD;
 const CANADA_POST_CUSTOMER_NUMBER = process.env.CANADA_POST_CUSTOMER_NUMBER;
+
+function escapeXml(unsafe) {
+    if (!unsafe) return "";
+    return unsafe.toString().replace(/[<>&'"]/g, (c) => {
+        switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+            default: return c;
+        }
+    });
+}
+
+function checkMockAllowed(serviceName) {
+    if (process.env.MOCK_CARRIERS !== "true") {
+        throw new Error(`Credentials missing for ${serviceName}. Fail-fast in production. Set MOCK_CARRIERS=true in .env to allow mock data fallback.`);
+    }
+}
 
 function getAuthHeaders() {
     if (
@@ -31,6 +48,9 @@ function isCanadianPostalCode(code) {
 
 async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = false }) {
     const headers = getAuthHeaders();
+    if (!headers) {
+        checkMockAllowed("Canada Post");
+    }
     const isPickupCa = isCanadianPostalCode(pickupPincode);
     const isDeliveryCa = isCanadianPostalCode(deliveryPincode);
 
@@ -131,6 +151,9 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
 
 async function createShipmentOrder(orderDetails) {
     const headers = getAuthHeaders();
+    if (!headers) {
+        checkMockAllowed("Canada Post");
+    }
     const isDeliveryCa = isCanadianPostalCode(orderDetails.deliveryPincode);
 
     if (!headers || !isDeliveryCa) {
@@ -167,7 +190,7 @@ async function createShipmentOrder(orderDetails) {
             </address-details>
         </sender>
         <destination>
-            <name>${orderDetails.customerName}</name>
+            <name>${escapeXml(orderDetails.customerName)}</name>
             <phone>${orderDetails.customerPhone.replace(/\D/g, "")}</phone>
             <address-details>
                 <address-line-1>Delivery Address</address-line-1>
@@ -221,6 +244,7 @@ async function trackShipment(awbNumber) {
     const headers = getAuthHeaders();
 
     if (!headers) {
+        checkMockAllowed("Canada Post");
 
         return {
             success: true,
@@ -278,6 +302,7 @@ async function cancelShipmentOrder(orderId, awbNumber) {
     const headers = getAuthHeaders();
 
     if (!headers) {
+        checkMockAllowed("Canada Post");
 
         return { success: true, orderId: orderId, referenceId: orderId };
     }
@@ -309,6 +334,9 @@ async function cancelShipmentOrder(orderId, awbNumber) {
 
 async function createReturnShipmentOrder(orderDetails) {
     const headers = getAuthHeaders();
+    if (!headers) {
+        checkMockAllowed("Canada Post");
+    }
     const isPickupCa = isCanadianPostalCode(orderDetails.pickupPincode);
 
     if (!headers || !isPickupCa) {
@@ -329,12 +357,12 @@ async function createReturnShipmentOrder(orderDetails) {
 <authorized-return xmlns="http://www.canadapost.ca/ws/authorizedreturn-v4">
     <service-code>DOM.RP</service-code>
     <returner>
-        <name>${orderDetails.customerName}</name>
+        <name>${escapeXml(orderDetails.customerName)}</name>
         <phone>${orderDetails.customerPhone.replace(/\D/g, "")}</phone>
         <address-details>
-            <address-line-1>${orderDetails.pickupAddress || "Pickup Address"}</address-line-1>
-            <city>${orderDetails.pickupCity || "Ottawa"}</city>
-            <province>${orderDetails.pickupState || "ON"}</province>
+            <address-line-1>${escapeXml(orderDetails.pickupAddress || "Pickup Address")}</address-line-1>
+            <city>${escapeXml(orderDetails.pickupCity || "Ottawa")}</city>
+            <province>${escapeXml(orderDetails.pickupState || "ON")}</province>
             <postal-code>${pickupPC}</postal-code>
         </address-details>
     </returner>
@@ -387,10 +415,44 @@ async function createReturnShipmentOrder(orderDetails) {
     }
 }
 
+async function getLabel(awbNumber) {
+    const headers = getAuthHeaders();
+
+    const mockPDF = Buffer.from(
+        `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 72 >>\nstream\nBT\n/F1 24 Tf\n100 700 Td\n(Mock Canada Post Shipping Label for AWB: ${awbNumber}) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000009 00000 n\n0000000056 00000 n\n0000000111 00000 n\n0000000212 00000 n\ntrailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n333\n%%EOF`
+    );
+
+    if (!headers) {
+        checkMockAllowed("Canada Post");
+        return mockPDF;
+    }
+
+    try {
+        const response = await fetch(`${CANADA_POST_API_URL}/rs/artifact/usps/label/${awbNumber}`, {
+            method: "GET",
+            headers: {
+                ...headers,
+                "Accept": "application/pdf"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Canada Post document retrieval failed: ${response.status}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+    } catch (error) {
+        console.error("Canada Post getLabel error, falling back to mock:", error.message);
+        return mockPDF;
+    }
+}
+
 module.exports = {
     fetchRates,
     createShipmentOrder,
     trackShipment,
     cancelShipmentOrder,
-    createReturnShipmentOrder
+    createReturnShipmentOrder,
+    getLabel
 };

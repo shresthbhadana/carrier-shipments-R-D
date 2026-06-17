@@ -48,9 +48,28 @@ const rateQuerySchema = Joi.object({
     weight: Joi.number().min(0).default(0.5),
     cod: Joi.boolean().default(false)
 });
+const objectIdSchema = Joi.object({
+    id: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required().messages({
+        "string.pattern.base": "Invalid MongoDB ObjectId format"
+    })
+});
+const initiateReturnSchema = Joi.object({
+    customerName: Joi.string().allow("", null),
+    customerPhone: Joi.string().allow("", null),
+    pickupAddress: Joi.string().required(),
+    pickupPincode: Joi.string().required(),
+    pickupCity: Joi.string().required(),
+    pickupState: Joi.string().required(),
+    weight: Joi.number().min(0).optional(),
+    returnReasonId: Joi.number().integer().optional(),
+    customerRequest: Joi.string().optional(),
+    reasonComment: Joi.string().allow("", null).optional()
+});
 
 module.exports = {
     createShipmentSchema,
     updateShipmentSchema,
-    rateQuerySchema
+    rateQuerySchema,
+    objectIdSchema,        
+    initiateReturnSchema
 };

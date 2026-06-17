@@ -3,7 +3,8 @@ const ShipmentSchema = new mongoose.Schema(
     {
         orderId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "ProductOrder"
+            ref: "ProductOrder",
+            index: true
         },
 
         courierName: String,

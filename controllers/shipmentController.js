@@ -34,12 +34,17 @@ const getShipmentById = async (req, res, next) => {
 
 const getAllShipments = async (req, res, next) => {
     try {
-        const shipments =
-            await shipmentService.getAllShipments();
+        const { page = 1, limit = 10, sort = "-createdAt" } = req.query;
+        const result = await shipmentService.getAllShipments({
+            page: parseInt(page),
+            limit: parseInt(limit),
+            sort
+        });
 
         res.status(200).json({
             success: true,
-            data: shipments
+            data: result.data,
+            pagination: result.pagination
         });
     } catch (error) {
         next(error);

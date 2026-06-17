@@ -1,9 +1,11 @@
 const express = require("express");
 const router = express.Router();
+const { authenticateJWT } = require("../middlewares/authMiddleware");
+const { verifyOrderOwnership } = require("../middlewares/ownershipMiddleware");
 
 const validate = require("../validators/validateMiddleware");
 const {
-    createOrderSchema
+    createOrderSchema ,updateOrderSchema
 } = require("../validators/productOrderValidator");
 
 const productOrderController =
@@ -16,22 +18,26 @@ router.post(
 );
 
 router.get(
-    "/",
+    "/", authenticateJWT,
+    verifyOrderOwnership,
     productOrderController.getAllOrders
 );
 
 router.get(
-    "/:id",
+    "/:id", authenticateJWT,
+    verifyOrderOwnership,
     productOrderController.getOrderById
 );
 
 router.put(
-    "/:id",
+    "/:id", authenticateJWT,
+    verifyOrderOwnership,validate(updateOrderSchema),
     productOrderController.updateOrder
 );
 
 router.delete(
-    "/:id",
+    "/:id", authenticateJWT,
+    verifyOrderOwnership,
     productOrderController.deleteProductOrder
 );
 

@@ -6,6 +6,14 @@ const fedexService = require("./fedexService");
 const fs = require("fs");
 const path = require("path");
 
+const getCarrierService = (courierName) => {
+    if (!courierName) return fedexService;
+    const name = courierName.toLowerCase().trim();
+    if (name.includes("fedex")) return fedexService;
+    if (name.includes("canada") || name.includes("postal")) return canadaPostService;
+    if (name.includes("delhivery") || name.includes("bluedart") || name.includes("shipmozo")) return shipmozoService;
+    return fedexService;
+};
 const createShipment = async (payload) => {
     if (!payload.orderId) {
         throw new Error("Order Id is required");
@@ -17,6 +25,22 @@ const createShipment = async (payload) => {
 
     if (!payload.courierName) {
         throw new Error("Courier name is required");
+    }
+
+    if (!payload.trackingId || !payload.awbNumber) {
+        const carrierService = getCarrierService(payload.courierName);
+        const bookingResult = await carrierService.createShipmentOrder({
+            orderId: payload.orderId,
+            customerName: payload.customerName || "Customer",
+            customerPhone: payload.customerPhone || "9876543210",
+            deliveryPincode: payload.deliveryPincode,
+            weight: payload.weight || 0.5,
+            courierName: payload.courierName
+        });
+
+        payload.trackingId = bookingResult.trackingId;
+        payload.awbNumber = bookingResult.awbNumber;
+        payload.status = bookingResult.status;
     }
 
     return shipmentRepository.createShipment(payload);
@@ -40,8 +64,8 @@ const getShipmentById = async (shipmentId) => {
     return shipment;
 };
 
-const getAllShipments = async () => {
-    return shipmentRepository.findAllShipments();
+const getAllShipments = async (options) => {
+    return shipmentRepository.findAllShipments(options);
 };
 
 const updateShipment = async (shipmentId, data) => {
@@ -84,47 +108,49 @@ const deleteShipment = async (shipmentId) => {
 };
 
 const getRates = async (payload) => {
-    let shipmozoRates = [];
-    let canadaPostRates = [];
-    let fedexRates = [];
-
-    try {
-        shipmozoRates = await shipmozoService.fetchRates({
+    const results = await Promise.allSettled([
+        shipmozoService.fetchRates({
             pickupPincode: payload.pickupPincode,
             deliveryPincode: payload.deliveryPincode,
             weight: payload.weight,
             cod: payload.cod
-        });
-    } catch (error) {
-        console.error("Shipmozo fetch rates error:", error.message);
+        }),
+        canadaPostService.fetchRates({
+            pickupPincode: payload.pickupPincode,
+            deliveryPincode: payload.deliveryPincode,
+            weight: payload.weight,
+            cod: payload.cod
+        }),
+        fedexService.fetchRates({
+            pickupPincode: payload.pickupPincode,
+            deliveryPincode: payload.deliveryPincode,
+            weight: payload.weight,
+            cod: payload.cod
+        })
+    ]);
+
+    const shipmozoRates = results[0].status === "fulfilled" ? results[0].value : [];
+    const canadaPostRates = results[1].status === "fulfilled" ? results[1].value : [];
+    const fedexRates = results[2].status === "fulfilled" ? results[2].value : [];
+
+    if (results[0].status === "rejected") {
+        console.error("Shipmozo fetch rates error:", results[0].reason.message);
     }
-
-    try {
-        canadaPostRates = await canadaPostService.fetchRates({
-            pickupPincode: payload.pickupPincode,
-            deliveryPincode: payload.deliveryPincode,
-            weight: payload.weight,
-            cod: payload.cod
-        });
-    } catch (error) {
-        console.error("Canada Post fetch rates error:", error.message);
+    if (results[1].status === "rejected") {
+        console.error("Canada Post fetch rates error:", results[1].reason.message);
     }
-
-    try {
-        fedexRates = await fedexService.fetchRates({
-            pickupPincode: payload.pickupPincode,
-            deliveryPincode: payload.deliveryPincode,
-            weight: payload.weight,
-            cod: payload.cod
-        });
-    } catch (error) {
-        console.error("FedEx fetch rates error:", error.message);
+    if (results[2].status === "rejected") {
+        console.error("FedEx fetch rates error:", results[2].reason.message);
     }
 
     return [...shipmozoRates, ...canadaPostRates, ...fedexRates];
 };
 
 const trackShipment = async (shipmentId) => {
+
+
+
+
     if (!shipmentId) {
         throw new Error("Shipment Id is required");
     }
@@ -135,6 +161,7 @@ const trackShipment = async (shipmentId) => {
 
     const shipment = await shipmentRepository.findById(shipmentId);
 
+   
     if (!shipment) {
         throw new Error("Shipment not found");
     }
@@ -142,8 +169,8 @@ const trackShipment = async (shipmentId) => {
     if (!shipment.awbNumber) {
         throw new Error("Tracking ID / AWB is not available for this shipment yet");
     }
-
-    return fedexService.trackShipment(shipment.awbNumber);
+     const carrierService = getCarrierService(shipment.courierName);
+    return carrierService.trackShipment(shipment.awbNumber);
 };
 
 const cancelShipment = async (shipmentId) => {
@@ -157,7 +184,8 @@ const cancelShipment = async (shipmentId) => {
         throw new Error("No AWB code linked. Cannot cancel un-booked shipment.");
     }
 
-    await fedexService.cancelShipmentOrder(shipment.orderId._id || shipment.orderId, shipment.awbNumber);
+    const carrierService = getCarrierService(shipment.courierName);
+    await carrierService.cancelShipmentOrder(shipment.orderId._id || shipment.orderId, shipment.awbNumber);
 
     await shipmentRepository.updateShipment(shipmentId, { status: "cancelled" });
 
@@ -173,8 +201,9 @@ const initiateReturn = async (shipmentId, returnData) => {
 
     const shipment = await shipmentRepository.findById(shipmentId);
     if (!shipment) throw new Error("Shipment not found");
+      const carrierService = getCarrierService(shipment.courierName);
 
-    const returnShipmentResult = await fedexService.createReturnShipmentOrder({
+    const returnShipmentResult = await carrierService.createReturnShipmentOrder({
         orderId: shipment.orderId._id || shipment.orderId,
         customerName: returnData.customerName || "Customer",
         customerPhone: returnData.customerPhone || "9876543210",
@@ -210,6 +239,7 @@ const getLabel = async (shipmentId) => {
 
     if (!shipment) throw new Error("Shipment not found");
     if (!shipment.awbNumber) throw new Error("AWB not found");
+       const carrierService = getCarrierService(shipment.courierName);
 
     const dir = path.join(__dirname, "../labels");
     const filename = `${shipment.awbNumber}.pdf`;
@@ -224,7 +254,7 @@ const getLabel = async (shipmentId) => {
         return labelUrl;
     }
 
-    const labelBuffer = await fedexService.getLabel(shipment.awbNumber);
+    const labelBuffer = await carrierService.getLabel(shipment.awbNumber);
     if (!labelBuffer) throw new Error("Failed to fetch label from FedEx");
 
     if (!fs.existsSync(dir)) {

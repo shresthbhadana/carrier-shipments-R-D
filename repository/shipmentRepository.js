@@ -16,8 +16,26 @@ const updateShipment = async (shipmentId, data) => {
     );
 };
 
-const findAllShipments = async () => {
-    return Shipment.find();
+const findAllShipments = async (options = {}) => {
+    const { page = 1, limit = 10, sort = "-createdAt" } = options;
+    const skip = (page - 1) * limit;
+
+    const query = Shipment.find().populate("orderId");
+
+    const [data, total] = await Promise.all([
+        query.sort(sort).skip(Number(skip)).limit(Number(limit)),
+        Shipment.countDocuments()
+    ]);
+
+    return {
+        data,
+        pagination: {
+            total,
+            page,
+            limit,
+            pages: Math.ceil(total / limit)
+        }
+    };
 };
 
 const deleteShipment = async (shipmentId) => {

@@ -34,12 +34,17 @@ const getOrderById = async (req, res, next) => {
 
 const getAllOrders = async (req, res, next) => {
     try {
-        const orders =
-            await productOrderService.getAllOrders();
+        const { page = 1, limit = 10, sort = "-createdAt" } = req.query;
+        const result = await productOrderService.getAllOrders({
+            page: parseInt(page),
+            limit: parseInt(limit),
+            sort
+        });
 
         res.status(200).json({
             success: true,
-            data: orders
+            data: result.data,
+            pagination: result.pagination
         });
     } catch (error) {
         next(error);

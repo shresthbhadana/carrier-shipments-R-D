@@ -1,10 +1,13 @@
-const dotenv = require("dotenv");
-dotenv.config();
-
 const FEDEX_API_URL = process.env.FEDEX_API_URL || "https://apis-sandbox.fedex.com";
 const FEDEX_CLIENT_ID = process.env.FEDEX_CLIENT_ID;
 const FEDEX_CLIENT_SECRET = process.env.FEDEX_CLIENT_SECRET;
 const FEDEX_ACCOUNT_NUMBER = process.env.FEDEX_ACCOUNT_NUMBER;
+
+function checkMockAllowed(serviceName) {
+    if (process.env.MOCK_CARRIERS !== "true") {
+        throw new Error(`Credentials missing for ${serviceName}. Fail-fast in production. Set MOCK_CARRIERS=true in .env to allow mock data fallback.`);
+    }
+}
 
 
 let cachedToken = null;
@@ -17,7 +20,7 @@ async function getAccessToken() {
         !FEDEX_CLIENT_SECRET || 
         FEDEX_CLIENT_ID === "your_fedex_client_id"
     ) {
-        return null; // Local mock mode
+        return null;
     }
 
   
@@ -56,8 +59,8 @@ async function getAccessToken() {
 async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = false }) {
     const token = await getAccessToken();
 
-  
     if (!token) {
+        checkMockAllowed("FedEx");
         const distanceFactor = Math.abs(parseInt(pickupPincode) - parseInt(deliveryPincode)) % 100;
         const basePrice = 80 + (weight * 35) + (distanceFactor * 0.9); // FedEx typically higher rates
         return [
@@ -125,6 +128,7 @@ async function createShipmentOrder(orderDetails) {
     const token = await getAccessToken();
 
     if (!token) {
+        checkMockAllowed("FedEx");
         const randomAWB = "FTN" + Math.floor(1000000000 + Math.random() * 9000000000);
         return {
             success: true,
@@ -195,6 +199,7 @@ async function trackShipment(awbNumber) {
     const token = await getAccessToken();
 
     if (!token) {
+        checkMockAllowed("FedEx");
         return {
             success: true,
             data: {
@@ -240,13 +245,22 @@ async function trackShipment(awbNumber) {
         const trackDetail = data.output.completeTrackResults[0].trackResults[0];
         const currentStatus = trackDetail.latestStatusDetail.description || "In Transit";
 
+        const scanEvents = trackDetail.scanEvents || [];
+        const scanDetail = scanEvents.map(event => ({
+            status: event.eventDescription || "In Transit",
+            location: event.eventLocation 
+                ? `${event.eventLocation.city || ""}, ${event.eventLocation.stateOrProvinceCode || ""}`.trim().replace(/^,\s*|,\s*$/g, "") 
+                : "Unknown Location",
+            date: event.date || new Date().toISOString()
+        }));
+
         return {
             success: true,
             data: {
                 awb_number: awbNumber,
                 courier: "FedEx",
                 current_status: currentStatus,
-                scan_detail: []
+                scan_detail: scanDetail
             }
         };
     } catch (e) {
@@ -259,6 +273,7 @@ async function cancelShipmentOrder(orderId, awbNumber) {
     const token = await getAccessToken();
 
     if (!token) {
+        checkMockAllowed("FedEx");
         return { success: true, orderId, referenceId: awbNumber };
     }
 
@@ -295,6 +310,7 @@ async function createReturnShipmentOrder(orderDetails) {
     const token = await getAccessToken();
 
     if (!token) {
+        checkMockAllowed("FedEx");
         const randomAWB = "RFTN" + Math.floor(1000000000 + Math.random() * 9000000000);
         return {
             success: true,
@@ -367,6 +383,7 @@ async function getLabel(awbNumber) {
     );
 
     if (!token) {
+        checkMockAllowed("FedEx");
         return mockPDF;
     }
 

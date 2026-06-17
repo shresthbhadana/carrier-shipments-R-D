@@ -10,21 +10,11 @@ const createOrderSchema = Joi.object({
                 quantity: Joi.number()
                     .integer()
                     .min(1)
-                    .required(),
-
-                price: Joi.number()
-                    .min(0)
                     .required()
             })
         )
         .min(1)
         .required(),
-
-    subtotal: Joi.number().min(0),
-
-    shippingPrice: Joi.number().min(0),
-
-    totalAmount: Joi.number().min(0),
 
     pickupPincode: Joi.string().required(),
 
@@ -38,7 +28,17 @@ const createOrderSchema = Joi.object({
 
     courierName: Joi.string().allow("", null)
 });
+const updateOrderSchema = Joi.object({
+    orderStatus: Joi.string().valid("pending", "processing", "shipped", "delivered", "cancelled", "returned"),
+    pickupPincode: Joi.string(),
+    deliveryPincode: Joi.string(),
+    customerName: Joi.string(),
+    customerPhone: Joi.string(),
+    weight: Joi.number().min(0)
+});
+
 
 module.exports = {
-    createOrderSchema
+    createOrderSchema,
+    updateOrderSchema
 };

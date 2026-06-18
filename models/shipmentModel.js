@@ -16,7 +16,8 @@ const ShipmentSchema = new mongoose.Schema(
         status: {
             type: String,
             default: "created"
-        }
+        },
+        pickupConfirmationNumber: String
     },
     {
         timestamps: true

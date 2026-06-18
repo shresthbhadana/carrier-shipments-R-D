@@ -3,6 +3,7 @@ const shipmentRepository = require("../repository/shipmentRepository");
 const canadaPostService = require("./canadaPostService");
 const shipmozoService = require("./shipmozoService");
 const fedexService = require("./fedexService");
+const porulatorService = require("./porulatorService");
 const fs = require("fs");
 const path = require("path");
 
@@ -10,6 +11,7 @@ const getCarrierService = (courierName) => {
     if (!courierName) return fedexService;
     const name = courierName.toLowerCase().trim();
     if (name.includes("fedex")) return fedexService;
+    if (name.includes("purolator") || name.includes("populator") || name.includes("porulator")) return porulatorService;
     if (name.includes("canada") || name.includes("postal")) return canadaPostService;
     if (name.includes("delhivery") || name.includes("bluedart") || name.includes("shipmozo")) return shipmozoService;
     return fedexService;
@@ -126,12 +128,20 @@ const getRates = async (payload) => {
             deliveryPincode: payload.deliveryPincode,
             weight: payload.weight,
             cod: payload.cod
+        }),
+        porulatorService.fetchRates({
+         pickupPincode: payload.pickupPincode,
+            deliveryPincode: payload.deliveryPincode,
+            weight: payload.weight,
+
+            cod: payload.cod
         })
     ]);
 
     const shipmozoRates = results[0].status === "fulfilled" ? results[0].value : [];
     const canadaPostRates = results[1].status === "fulfilled" ? results[1].value : [];
     const fedexRates = results[2].status === "fulfilled" ? results[2].value : [];
+    const porulatorRates = results[3].status === "fulfilled" ? results[3].value : [];
 
     if (results[0].status === "rejected") {
         console.error("Shipmozo fetch rates error:", results[0].reason.message);
@@ -142,8 +152,11 @@ const getRates = async (payload) => {
     if (results[2].status === "rejected") {
         console.error("FedEx fetch rates error:", results[2].reason.message);
     }
+    if (results[3].status === "rejected") {
+        console.error("Purolator fetch rates error:", results[3].reason.message);
+    }
 
-    return [...shipmozoRates, ...canadaPostRates, ...fedexRates];
+    return [...shipmozoRates, ...canadaPostRates, ...fedexRates, ...porulatorRates];
 };
 
 const trackShipment = async (shipmentId) => {
@@ -270,6 +283,49 @@ const getLabel = async (shipmentId) => {
     return labelUrl;
 };
 
+const schedulePickup = async (shipmentId, pickupData) => {
+    if (!shipmentId) {
+        throw new Error("Shipment Id is required");
+    }
+    if (!mongoose.Types.ObjectId.isValid(shipmentId)) {
+        throw new Error("Invalid Shipment Id");
+    }
+
+    const shipment = await shipmentRepository.findById(shipmentId);
+    if (!shipment) {
+        throw new Error("Shipment not found");
+    }
+
+    const carrierService = getCarrierService(shipment.courierName);
+    const pickupFn = carrierService.schedulePickup || carrierService.getpickup;
+    if (!pickupFn || typeof pickupFn !== "function") {
+        throw new Error(`Carrier ${shipment.courierName || "unknown"} does not support pickup scheduling`);
+    }
+
+    const result = await pickupFn(pickupData);
+
+    // Save pickup confirmation number if returned
+    if (result && result.pickupConfirmationNumber) {
+        await shipmentRepository.updateShipment(shipmentId, {
+            pickupConfirmationNumber: result.pickupConfirmationNumber
+        });
+    }
+
+    return result;
+};
+
+const getLocations = async (options = {}) => {
+    const { carrier, postalCode } = options;
+    if (!postalCode) {
+        throw new Error("Postal code is required");
+    }
+    const carrierService = getCarrierService(carrier);
+    if (!carrierService.getLocations || typeof carrierService.getLocations !== "function") {
+        throw new Error(`Carrier ${carrier || "default"} does not support location lookup`);
+    }
+    return carrierService.getLocations(postalCode);
+};
+
 module.exports = {
     createShipment,
     getShipmentById,
@@ -280,5 +336,7 @@ module.exports = {
     trackShipment,
     cancelShipment,
     initiateReturn,
-    getLabel
+    getLabel,
+    schedulePickup,
+    getLocations
 };

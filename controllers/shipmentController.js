@@ -143,6 +143,33 @@ const getLabel = async (req, res, next) => {
     }
 };
 
+const schedulePickup = async (req, res, next) => {
+    try {
+        const result = await shipmentService.schedulePickup(req.params.id, req.body);
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getLocations = async (req, res, next) => {
+    try {
+        const locations = await shipmentService.getLocations({
+            carrier: req.query.carrier,
+            postalCode: req.query.postalCode
+        });
+        res.status(200).json({
+            success: true,
+            data: locations
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     createShipment,
     getShipmentById,
@@ -153,5 +180,7 @@ module.exports = {
     trackShipment,
     cancelShipment,
     initiateReturn,
-    getLabel
+    getLabel,
+    schedulePickup,
+    getLocations
 };

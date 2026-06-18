@@ -7,11 +7,33 @@ const shipmentController =
 const validate =
     require("../validators/validateMiddleware");
 
-const {
-    createShipmentSchema,
-    updateShipmentSchema,
-    rateQuerySchema
+const { 
+    createShipmentSchema, 
+    updateShipmentSchema, 
+    rateQuerySchema,
+    objectIdSchema,
+    initiateReturnSchema 
 } = require("../validators/shipmentValidator");
+const validateParams = (schema) => (req, res, next) => {
+    const { error } = schema.validate(req.params);
+    if (error) {
+        return res.status(400).json({
+            success: false,
+            message: error.details.map((e) => e.message)
+        });
+    }
+    next();
+};
+//authentication midddleware
+const {authenticateJWT} = require("../middlewares/authMiddleware");
+//ownershipMiddleware
+const {verifyShipmentOwnership} = require("../middlewares/ownershipMiddleware");
+
+router.use(authenticateJWT)
+
+
+
+
 
 router.post(
     "/",
@@ -31,38 +53,35 @@ router.get(
 );
 
 router.get(
-    "/:id",
+    "/:id",verifyShipmentOwnership,
     shipmentController.getShipmentById
 );
 
 router.put(
-    "/:id",
+    "/:id",verifyShipmentOwnership,
     validate(updateShipmentSchema),
     shipmentController.updateShipment
 );
 
 router.delete(
-    "/:id",
+    "/:id",verifyShipmentOwnership,
     shipmentController.deleteShipment
 );
 
-router.get(
-    "/:id/track",
-    shipmentController.trackShipment
-);
 
 router.get(
-    "/:id/label",
+    "/:id/label",verifyShipmentOwnership,
     shipmentController.getLabel
 );
 
 router.post(
-    "/:id/cancel",
+    "/:id/cancel",  validateParams(objectIdSchema),verifyShipmentOwnership,
     shipmentController.cancelShipment
 );
 
 router.post(
-    "/:id/return",
+    "/:id/return", validateParams(objectIdSchema),
+    validate(initiateReturnSchema),verifyShipmentOwnership,
     shipmentController.initiateReturn
 );
 

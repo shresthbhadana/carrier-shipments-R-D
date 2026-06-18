@@ -89,10 +89,11 @@ jest.mock("./repository/shipmentRepository", () => {
     };
 });
 
-// Require services under test
+
 const canadaPostService = require("./services/canadaPostService");
 const productOrderService = require("./services/productOrderService");
 const shipmentService = require("./services/shipmentService");
+const porulatorService = require("./services/porulatorService");
 
 describe("YellowDodle E-commerce Carrier Integration Tests", () => {
     afterEach(() => {
@@ -129,7 +130,7 @@ describe("YellowDodle E-commerce Carrier Integration Tests", () => {
         const resultOrder = await productOrderService.createProductOrder(payload);
 
         expect(resultOrder).toBeDefined();
-        expect(resultOrder.subtotal).toBe(1500); // 1500 resolved from DB * 1 quantity
+        expect(resultOrder.subtotal).toBe(1500); 
         expect(resultOrder.shippingPrice).toBeDefined();
         expect(resultOrder.totalAmount).toBe(resultOrder.subtotal + resultOrder.shippingPrice);
         expect(mockSession.commitTransaction).toHaveBeenCalled();
@@ -171,5 +172,61 @@ describe("YellowDodle E-commerce Carrier Integration Tests", () => {
         const cancelResult = await shipmentService.cancelShipment(mockShipmentId);
         expect(cancelResult.success).toBe(true);
         expect(cancelResult.message).toContain("cancelled successfully");
+    });
+
+    test("7. porulatorService.fetchRates should return an array of rates", async () => {
+        const rates = await porulatorService.fetchRates({
+            pickupPincode: "K1A0B1",
+            deliveryPincode: "K1A0B2",
+            weight: 1.0
+        });
+        expect(Array.isArray(rates)).toBe(true);
+        expect(rates.length).toBeGreaterThan(0);
+        expect(rates[0]).toHaveProperty("courierName");
+        expect(rates[0].courierName).toContain("Purolator");
+    });
+
+    test("8. porulatorService.trackShipment should return status details", async () => {
+        const tracking = await porulatorService.trackShipment("PUR12345678");
+        expect(tracking.success).toBe(true);
+        expect(tracking.data.awb_number).toBe("PUR12345678");
+        expect(tracking.data.courier).toBe("Purolator");
+        expect(tracking.data.current_status).toBeDefined();
+    });
+
+    test("9. shipmentService.schedulePickup should call schedule pickup on the resolved carrier service", async () => {
+    
+        const mockPurolatorShipment = {
+            _id: mockShipmentId,
+            orderId: mockOrderId,
+            courierName: "Purolator Express Box 9AM",
+            trackingId: "PUR12345678",
+            awbNumber: "PUR12345678",
+            shippingPrice: 15,
+            status: "created"
+        };
+        const shipmentRepository = require("./repository/shipmentRepository");
+        jest.spyOn(shipmentRepository, "findById").mockResolvedValueOnce(mockPurolatorShipment);
+
+        const pickupData = {
+            date: "2026-06-20",
+            pickupPincode: "L5R3T8",
+            customerName: "John Doe",
+            customerPhone: "14031234567"
+        };
+
+        const result = await shipmentService.schedulePickup(mockShipmentId, pickupData);
+        expect(result.success).toBe(true);
+        expect(result.pickupConfirmationNumber).toBeDefined();
+    });
+
+    test("10. shipmentService.getLocations should lookup locations from carrier service", async () => {
+        const result = await shipmentService.getLocations({
+            carrier: "purolator",
+            postalCode: "L5R3T8"
+        });
+        expect(result).toBeDefined();
+        expect(result.locations).toBeDefined();
+        expect(result.locations.length).toBeGreaterThan(0);
     });
 });

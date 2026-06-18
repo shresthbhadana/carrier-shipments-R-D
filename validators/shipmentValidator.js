@@ -66,10 +66,34 @@ const initiateReturnSchema = Joi.object({
     reasonComment: Joi.string().allow("", null).optional()
 });
 
+const schedulePickupSchema = Joi.object({
+    date: Joi.string().optional(),
+    anyTimeAfter: Joi.string().optional(),
+    untilTime: Joi.string().optional(),
+    weight: Joi.number().min(0).optional(),
+    pickupLocation: Joi.string().optional(),
+    additionalInstructions: Joi.string().allow("", null).optional(),
+    supplyRequestCodes: Joi.array().items(Joi.string()).optional(),
+    pickupAddress: Joi.string().optional(),
+    pickupState: Joi.string().optional(),
+    pickupCity: Joi.string().optional(),
+    pickupPincode: Joi.string().optional(),
+    customerName: Joi.string().optional(),
+    customerPhone: Joi.string().optional(),
+    email: Joi.string().email().optional()
+});
+
+const getLocationsSchema = Joi.object({
+    carrier: Joi.string().optional(),
+    postalCode: Joi.string().required()
+});
+
 module.exports = {
     createShipmentSchema,
     updateShipmentSchema,
     rateQuerySchema,
     objectIdSchema,        
-    initiateReturnSchema
+    initiateReturnSchema,
+    schedulePickupSchema,
+    getLocationsSchema
 };

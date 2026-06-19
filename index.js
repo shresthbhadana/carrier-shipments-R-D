@@ -12,7 +12,11 @@ require("./models/productInfoModel");
 const productOrderRoutes = require("./routes/productOrderRoute");
 const shipmentRoutes = require("./routes/shipmentRoute");
 const authRoutes = require("./routes/authRoutes");
+const subscriptionRoutes = require("./routes/subscriptionRoutes");
+
+
 const errorHandler = require("./middlewares/errorMiddleware");
+
 
 dotenv.config();
 
@@ -42,6 +46,8 @@ app.use(
     productOrderRoutes
 );
 app.use("/api/shipments", shipmentRoutes);
+app.use("/api/v1", subscriptionRoutes
+);
 app.use(errorHandler);
 const startServer = async () => {
     try {

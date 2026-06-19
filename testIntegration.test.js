@@ -89,11 +89,86 @@ jest.mock("./repository/shipmentRepository", () => {
     };
 });
 
+jest.mock("./config/razorpay", () => {
+    return {
+        plans: {
+            create: jest.fn().mockResolvedValue({
+                id: "plan_mock123",
+                entity: "plan",
+                interval: 1,
+                period: "monthly",
+                item: {
+                    name: "Test Plan",
+                    amount: 10000,
+                    currency: "INR"
+                }
+            })
+        },
+        subscriptions: {
+            create: jest.fn().mockResolvedValue({
+                id: "sub_mock123",
+                entity: "subscription",
+                plan_id: "plan_mock123",
+                status: "created",
+                total_count: 12,
+                customer_notify: 1
+            }),
+            fetch: jest.fn().mockResolvedValue({
+                id: "sub_mock123",
+                entity: "subscription",
+                plan_id: "plan_mock123",
+                status: "active",
+                total_count: 12
+            }),
+            cancel: jest.fn().mockResolvedValue({
+                id: "sub_mock123",
+                entity: "subscription",
+                plan_id: "plan_mock123",
+                status: "cancelled",
+                total_count: 12
+            })
+        }
+    };
+});
+
+jest.mock("./repository/subscriptionRepository", () => {
+    return {
+        create: jest.fn().mockImplementation((payload) => Promise.resolve({ ...payload, _id: "sub_db_123" })),
+        findBySubscriptionId: jest.fn().mockResolvedValue({
+            _id: "sub_db_123",
+            userId: "60c72b2f9b1d8e2568cf9570",
+            razorpayPlanId: "plan_mock123",
+            razorpaySubscriptionId: "sub_mock123",
+            status: "active",
+            totalCount: 12
+        }),
+        findAllSubscription: jest.fn().mockResolvedValue([
+            {
+                _id: "sub_db_123",
+                userId: "60c72b2f9b1d8e2568cf9570",
+                razorpayPlanId: "plan_mock123",
+                razorpaySubscriptionId: "sub_mock123",
+                status: "active",
+                totalCount: 12
+            }
+        ]),
+        updateStatus: jest.fn().mockImplementation((subscriptionId, status) => Promise.resolve({
+            _id: "sub_db_123",
+            userId: "60c72b2f9b1d8e2568cf9570",
+            razorpayPlanId: "plan_mock123",
+            razorpaySubscriptionId: subscriptionId,
+            status: status,
+            totalCount: 12
+        }))
+    };
+});
+
 
 const canadaPostService = require("./services/canadaPostService");
 const productOrderService = require("./services/productOrderService");
 const shipmentService = require("./services/shipmentService");
 const porulatorService = require("./services/porulatorService");
+const subscriptionService = require("./services/subscriptionService");
 
 describe("YellowDodle E-commerce Carrier Integration Tests", () => {
     afterEach(() => {
@@ -228,5 +303,69 @@ describe("YellowDodle E-commerce Carrier Integration Tests", () => {
         expect(result).toBeDefined();
         expect(result.locations).toBeDefined();
         expect(result.locations.length).toBeGreaterThan(0);
+    });
+
+    test("11. subscriptionService.createPlan should create plan successfully", async () => {
+        const plan = await subscriptionService.createPlan({
+            period: "monthly",
+            interval: 1,
+            amount: 100,
+            planName: "Test Plan"
+        });
+
+        expect(plan).toBeDefined();
+        expect(plan.id).toBe("plan_mock123");
+        expect(plan.amount).toBe("100 + 18% GST");
+        expect(plan.totalAmount).toBe(118);
+    });
+
+    test("12. subscriptionService.createSubscription should create subscription successfully", async () => {
+        const result = await subscriptionService.createSubscription({
+            userId: mockUserId,
+            planId: "plan_mock123",
+            totalCount: 12,
+            customerNotify: 1
+        });
+
+        expect(result).toBeDefined();
+        expect(result.subscription.id).toBe("sub_mock123");
+        expect(result.savedSubscription.userId).toBe(mockUserId);
+        expect(result.savedSubscription.razorpaySubscriptionId).toBe("sub_mock123");
+    });
+
+    test("13. subscriptionService.fetchSubscription should fetch subscription successfully", async () => {
+        const subscription = await subscriptionService.fetchSubscription("sub_mock123");
+        expect(subscription).toBeDefined();
+        expect(subscription.id).toBe("sub_mock123");
+        expect(subscription.status).toBe("active");
+    });
+
+    test("14. subscriptionService.cancelSubscription should cancel subscription successfully", async () => {
+        const result = await subscriptionService.cancelSubscription("sub_mock123");
+        expect(result).toBeDefined();
+        expect(result.subscription.id).toBe("sub_mock123");
+        expect(result.subscription.status).toBe("cancelled");
+        expect(result.updatedSubscription.status).toBe("cancelled");
+    });
+
+    test("15. subscriptionService.getUserSubscriptions should return all user subscriptions", async () => {
+        const list = await subscriptionService.getUserSubscriptions({ userId: mockUserId });
+        expect(Array.isArray(list)).toBe(true);
+        expect(list.length).toBe(1);
+        expect(list[0].userId).toBe(mockUserId);
+    });
+
+    test("16. subscriptionService.updateSubscriptionStatus should update status in database", async () => {
+        const updated = await subscriptionService.updateSubscriptionStatus("sub_mock123", "active");
+        expect(updated).toBeDefined();
+        expect(updated.razorpaySubscriptionId).toBe("sub_mock123");
+        expect(updated.status).toBe("active");
+    });
+
+    test("17. subscriptionService.getSubscriptionByRazorpayId should fetch subscription from database", async () => {
+        const subscription = await subscriptionService.getSubscriptionByRazorpayId("sub_mock123");
+        expect(subscription).toBeDefined();
+        expect(subscription.razorpaySubscriptionId).toBe("sub_mock123");
+        expect(subscription.status).toBe("active");
     });
 });

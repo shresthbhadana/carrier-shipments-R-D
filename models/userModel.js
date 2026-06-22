@@ -22,18 +22,13 @@ const UserSchema = new mongoose.Schema(
     }
 );
 
-//pre save hook
-UserSchema.pre("save", async function (next) {
+
+UserSchema.pre("save", async function () {
     if (!this.isModified("password")) {
-        return next();
+        return;
     }
-    try {
-        const salt = await bcyrpt.genSalt(10);
-        this.password = await bcyrpt.hash(this.password, salt);
-        next();
-    } catch (err) {
-        next(err);
-    }
+    const salt = await bcyrpt.genSalt(10);
+    this.password = await bcyrpt.hash(this.password, salt);
 });
 UserSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcyrpt.compare(enteredPassword, this.password);

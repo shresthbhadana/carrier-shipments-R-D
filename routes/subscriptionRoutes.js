@@ -4,7 +4,8 @@ const { authenticateJWT } = require("../middlewares/authMiddleware");
 const validate = require("../validators/validateMiddleware");
 const {
     createPlanSchema,
-    createSubscriptionSchema
+    createSubscriptionSchema,
+    verifySubscriptionSchema
 } = require("../validators/subscriptionValidation");
 
 const subscriptionController = require("../controllers/subscriptionController");
@@ -53,6 +54,18 @@ router.get(
     "/razorpay/:subscriptionId",
     authenticateJWT,
     subscriptionController.getSubscriptionByRazorpayId
+);
+
+router.post(
+    "/verify",
+    authenticateJWT,
+    validate(verifySubscriptionSchema),
+    subscriptionController.verifySubscription
+);
+
+router.post(
+    "/webhook",
+    subscriptionController.handleWebhook
 );
 
 module.exports = router;

@@ -18,12 +18,14 @@ const createPlan = async(req,res,next)=>{
 const createSubscriptions = async(req,res,next)=>{
     try{
         const userId = req.user?.id || req.body.userId;
-        const { planId, totalCount, customerNotify } = req.body;
+        const { planId, totalCount, customerNotify, startAt, addons } = req.body;
         const subscription = await subscriptionService.createSubscription({
             userId,
             planId,
             totalCount,
-            customerNotify
+            customerNotify,
+            startAt,
+            addons
         })
 
         return res.status(201).json({
@@ -114,6 +116,40 @@ const getSubscriptionByRazorpayId = async(req,res,next)=>{
     }
 }
 
+const verifySubscription = async(req,res,next)=>{
+    try{
+        const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature } = req.body;
+        const result = await subscriptionService.verifySubscriptionSignature({
+            razorpay_payment_id,
+            razorpay_subscription_id,
+            razorpay_signature
+        });
+        return res.status(200).json({
+            success : true,
+            message : "Payment signature verified successfully",
+            data : result
+        });
+    }
+    catch(err){
+        next(err);
+    }
+}
+
+const handleWebhook = async(req,res,next)=>{
+    try{
+        const signature = req.headers["x-razorpay-signature"];
+        const result = await subscriptionService.processWebhook(req.body, signature, req.rawBody);
+        return res.status(200).json({
+            success : true,
+            message : "Webhook processed successfully",
+            data : result
+        });
+    }
+    catch(err){
+        next(err);
+    }
+}
+
 module.exports = {
     createPlan,
     createSubscriptions,
@@ -121,5 +157,7 @@ module.exports = {
     cancelSubscription,
     getUserSubscription,
     updateSubscriptionStatus,
-    getSubscriptionByRazorpayId
+    getSubscriptionByRazorpayId,
+    verifySubscription,
+    handleWebhook
 }

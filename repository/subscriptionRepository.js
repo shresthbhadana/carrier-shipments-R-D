@@ -18,7 +18,7 @@ const findAllSubscription = async({
     skip=0
 })=>{
     const filter={userId}
-    return Subscription.find(filter).sort({createdAt:-1}).skip(skip).limit(limit).populate("planId", "name")
+    return Subscription.find(filter).sort({createdAt:-1}).skip(skip).limit(limit)
 }
 
 const updateStatus = async (

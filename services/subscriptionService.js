@@ -1,5 +1,18 @@
+const crypto = require("crypto");
 const razorpay = require("../config/razorpay");
 const subscriptionRepository = require("../repository/subscriptionRepository");
+
+const getErrorMessage = (error) => {
+    if (!error) return "Unknown error";
+    if (typeof error === "string") return error;
+    if (error.description) return error.description;
+    if (error.error) {
+        if (typeof error.error === "string") return error.error;
+        if (error.error.description) return error.error.description;
+        if (error.error.message) return error.error.message;
+    }
+    return error.message || "Unknown error";
+};
 
 const createPlan = async(payload)=>{
 try{
@@ -43,8 +56,9 @@ const planName = payload.planName;
 
     
     }catch(error){
+        console.error("Error in createPlan:", error);
         throw new Error(
-            error.message ||
+            getErrorMessage(error) ||
             "Failed to create plan"
         );
     }
@@ -55,6 +69,8 @@ const createSubscription = async({
     planId,
     totalCount = 12,
     customerNotify = 1,
+    startAt,
+    addons
 })=>{
 try{
     if(!userId){
@@ -70,12 +86,27 @@ try{
         throw new Error("customerNotify should be 0 or 1");   
     }
 
-const subscription = await razorpay.subscriptions.create({
-    
-       plan_id: planId,
-                total_count: totalCount,
-                customer_notify: customerNotify
-})
+    const options = {
+        plan_id: planId,
+        total_count: totalCount,
+        customer_notify: customerNotify
+    };
+
+    if (startAt) {
+        options.start_at = startAt;
+    }
+
+    if (addons && addons.length > 0) {
+        options.addons = addons.map(addon => ({
+            item: {
+                name: addon.item.name,
+                amount: addon.item.amount * 100, // convert to subunits
+                currency: addon.item.currency || "INR"
+            }
+        }));
+    }
+
+    const subscription = await razorpay.subscriptions.create(options);
 
 
 const savedSubscription = await subscriptionRepository.create({
@@ -90,13 +121,13 @@ return {
     subscription,
     savedSubscription
 };
-}catch(error){
-    throw new Error(
-        error.message ||
-        "Failed to create subscription"
-    )
-
-}
+    }catch(error){
+        console.error("Error in createSubscription:", error);
+        throw new Error(
+            getErrorMessage(error) ||
+            "Failed to create subscription"
+        );
+    }
 }
 
 const fetchSubscription = async(subscriptionId)=>{
@@ -110,10 +141,10 @@ if(!subscriptionId){
 
 
     }catch(error){
+        console.error("Error in fetchSubscription:", error);
         throw new Error(
-            error.message || "failed in fetching subscription"
-        )
-
+            getErrorMessage(error) || "failed in fetching subscription"
+        );
     }
 }
 
@@ -135,9 +166,10 @@ return {
     updatedSubscription
 };
     }catch(error){
+        console.error("Error in cancelSubscription:", error);
         throw new Error(
-            error.message || "failed in cancelling subscription"
-        )
+            getErrorMessage(error) || "failed in cancelling subscription"
+        );
     }
 }
 
@@ -188,6 +220,88 @@ const getSubscriptionByRazorpayId = async (subscriptionId) => {
     }
 };
 
+const verifySubscriptionSignature = async ({
+    razorpay_payment_id,
+    razorpay_subscription_id,
+    razorpay_signature
+}) => {
+    try {
+        const secret = process.env.RAZORPAY_TEST_SECRET;
+        if (!secret) {
+            throw new Error("Razorpay secret is not configured");
+        }
+
+        const payload = `${razorpay_payment_id}|${razorpay_subscription_id}`;
+        const generated_signature = crypto
+            .createHmac("sha256", secret)
+            .update(payload)
+            .digest("hex");
+
+        if (generated_signature !== razorpay_signature) {
+            throw new Error("Signature verification failed");
+        }
+
+        const subscription = await subscriptionRepository.updateStatus(
+            razorpay_subscription_id,
+            "active"
+        );
+
+        if (!subscription) {
+            throw new Error("Subscription not found in database");
+        }
+
+        return subscription;
+    } catch (error) {
+        console.error("Error in verifySubscriptionSignature:", error);
+        throw new Error(getErrorMessage(error) || "Signature verification failed");
+    }
+};
+
+const processWebhook = async (event, signature, rawBody) => {
+    try {
+        const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+        if (webhookSecret && signature && rawBody) {
+            const generated_signature = crypto
+                .createHmac("sha256", webhookSecret)
+                .update(rawBody)
+                .digest("hex");
+
+            if (generated_signature !== signature) {
+                throw new Error("Webhook signature verification failed");
+            }
+        }
+
+        const eventName = event.event;
+        const payload = event.payload;
+
+        if (!payload || !payload.subscription || !payload.subscription.entity) {
+            return { message: "Ignored event: missing subscription entity" };
+        }
+
+        const subscriptionEntity = payload.subscription.entity;
+        const razorpaySubscriptionId = subscriptionEntity.id;
+        const status = subscriptionEntity.status;
+
+        let localStatus = status;
+        if (status === "authenticated") localStatus = "active";
+
+        const updated = await subscriptionRepository.updateStatus(
+            razorpaySubscriptionId,
+            localStatus
+        );
+
+        return {
+            event: eventName,
+            subscriptionId: razorpaySubscriptionId,
+            status: localStatus,
+            updated
+        };
+    } catch (error) {
+        console.error("Error in processWebhook:", error);
+        throw new Error(getErrorMessage(error) || "Failed to process webhook");
+    }
+};
+
 module.exports = {
     createPlan,
     createSubscription,
@@ -195,5 +309,7 @@ module.exports = {
     cancelSubscription,
     getUserSubscriptions,
     updateSubscriptionStatus,
-    getSubscriptionByRazorpayId
+    getSubscriptionByRazorpayId,
+    verifySubscriptionSignature,
+    processWebhook
 };

@@ -24,7 +24,11 @@ const app = express();
 
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({
+    verify: (req, res, buf) => {
+        req.rawBody = buf.toString();
+    }
+}));
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,

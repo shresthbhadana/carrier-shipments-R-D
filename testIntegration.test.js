@@ -320,11 +320,22 @@ describe("YellowDodle E-commerce Carrier Integration Tests", () => {
     });
 
     test("12. subscriptionService.createSubscription should create subscription successfully", async () => {
+        const startAtFuture = Math.floor(Date.now() / 1000) + 86400; 
         const result = await subscriptionService.createSubscription({
             userId: mockUserId,
             planId: "plan_mock123",
             totalCount: 12,
-            customerNotify: 1
+            customerNotify: 1,
+            startAt: startAtFuture,
+            addons: [
+                {
+                    item: {
+                        name: "Setup Fee",
+                        amount: 100,
+                        currency: "INR"
+                    }
+                }
+            ]
         });
 
         expect(result).toBeDefined();
@@ -367,5 +378,55 @@ describe("YellowDodle E-commerce Carrier Integration Tests", () => {
         expect(subscription).toBeDefined();
         expect(subscription.razorpaySubscriptionId).toBe("sub_mock123");
         expect(subscription.status).toBe("active");
+    });
+
+    test("18. subscriptionService.verifySubscriptionSignature should verify valid signature and update status", async () => {
+        const secret = "my_super_secret";
+        process.env.RAZORPAY_TEST_SECRET = secret;
+        const razorpay_payment_id = "pay_test123";
+        const razorpay_subscription_id = "sub_mock123";
+        const crypto = require("crypto");
+        const razorpay_signature = crypto
+            .createHmac("sha256", secret)
+            .update(`${razorpay_payment_id}|${razorpay_subscription_id}`)
+            .digest("hex");
+
+        const result = await subscriptionService.verifySubscriptionSignature({
+            razorpay_payment_id,
+            razorpay_subscription_id,
+            razorpay_signature
+        });
+
+        expect(result).toBeDefined();
+        expect(result.razorpaySubscriptionId).toBe("sub_mock123");
+        expect(result.status).toBe("active");
+    });
+
+    test("19. subscriptionService.verifySubscriptionSignature should throw error on invalid signature", async () => {
+        await expect(subscriptionService.verifySubscriptionSignature({
+            razorpay_payment_id: "pay_test123",
+            razorpay_subscription_id: "sub_mock123",
+            razorpay_signature: "invalid_signature"
+        })).rejects.toThrow("Signature verification failed");
+    });
+
+    test("20. subscriptionService.processWebhook should process webhook event and update status", async () => {
+        const webhookEvent = {
+            event: "subscription.charged",
+            payload: {
+                subscription: {
+                    entity: {
+                        id: "sub_mock123",
+                        status: "active"
+                    }
+                }
+            }
+        };
+
+        const result = await subscriptionService.processWebhook(webhookEvent);
+        expect(result).toBeDefined();
+        expect(result.event).toBe("subscription.charged");
+        expect(result.subscriptionId).toBe("sub_mock123");
+        expect(result.status).toBe("active");
     });
 });

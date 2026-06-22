@@ -1,5 +1,12 @@
 const Razorpay = require("razorpay");
-require("dotenv").config();
+const path = require("path");
+
+// Load from src/.env first
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
+// Fallback to root .env if keys not found
+if (!process.env.RAZORPAY_TEST_KEY) {
+    require("dotenv").config({ path: path.join(__dirname, "../../.env") });
+}
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_TEST_KEY,

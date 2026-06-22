@@ -2,6 +2,7 @@ const productOrderService = require("../services/productOrderService");
 
 const createProductOrder = async (req, res, next) => {
     try {
+        req.body.userId = req.user.id;
         const order =
             await productOrderService.createProductOrder(
                 req.body

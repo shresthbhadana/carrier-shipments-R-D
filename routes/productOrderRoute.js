@@ -13,6 +13,8 @@ const productOrderController =
 
 router.post(
     "/",
+    authenticateJWT,
+
     validate(createOrderSchema),
     productOrderController.createProductOrder
 );

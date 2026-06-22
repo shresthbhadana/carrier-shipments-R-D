@@ -1,0 +1,751 @@
+{
+	"info": {
+		"_postman_id": "a9cfcf2c-4735-430f-b4ff-2e86b093a388",
+		"name": "YellowDodle Shipping API",
+		"description": "Postman Collection for YellowDodle Orders and Shipments APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Signup",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test User\",\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/auth/signup",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"auth",
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/auth/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "Create Product Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"642bb0ea00f1aa96d6ab2090\",\n    \"products\": [\n        {\n            \"productId\": \"642bb0ea00f1aa96d6ab2091\",\n            \"quantity\": 2\n        }\n    ],\n    \"pickupPincode\": \"110001\",\n    \"deliveryPincode\": \"400001\",\n    \"customerName\": \"Test Customer\",\n    \"customerPhone\": \"9876543210\",\n    \"weight\": 1.0,\n    \"courierName\": \"FedEx Ground\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/orders/ORDER_ID",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"ORDER_ID"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"orderStatus\": \"processing\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/orders/ORDER_ID",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"ORDER_ID"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Order",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/orders/ORDER_ID",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders",
+								"ORDER_ID"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Shipments",
+			"item": [
+				{
+					"name": "Get Shipping Rates",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pickupPincode\": \"110001\",\n    \"deliveryPincode\": \"400001\",\n    \"weight\": 1.0,\n    \"cod\": false\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/rates",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"rates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Shipment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"orderId\": \"642bb0ea00f1aa96d6ab2091\",\n    \"courierName\": \"FedEx Ground\",\n    \"shippingPrice\": 15,\n    \"status\": \"created\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Shipments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shipment By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Track Shipment",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/track",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"track"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Shipment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/cancel",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Initiate Shipment Return",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customerName\": \"Test Customer\",\n    \"customerPhone\": \"9876543210\",\n    \"pickupAddress\": \"Sector 49, Gurgaon\",\n    \"pickupPincode\": \"122001\",\n    \"pickupCity\": \"Gurgaon\",\n    \"pickupState\": \"Haryana\",\n    \"weight\": 1.0,\n    \"returnReasonId\": 14,\n    \"customerRequest\": \"REFUND\",\n    \"reasonComment\": \"Returned because of size issue\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/return",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"return"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shipment Label",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/label",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"label"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Subscriptions",
+			"item": [
+				{
+					"name": "Create Plan",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"period\": \"monthly\",\n    \"interval\": 1,\n    \"amount\": 500,\n    \"planName\": \"Premium Plan\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/plans",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"plans"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Subscription",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"planId\": \"plan_T4ZsJnH9N0XxXI\",\n    \"totalCount\": 12,\n    \"customerNotify\": 1,\n    \"startAt\": 1782106668,\n    \"addons\": [\n        {\n            \"item\": {\n                \"name\": \"Setup Fee\",\n                \"amount\": 1000,\n                \"currency\": \"INR\"\n            }\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subscription By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/v1/sub_T4Zv0CyVJQmxl3",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"sub_T4Zv0CyVJQmxl3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Subscription",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/v1/sub_T4Zv0CyVJQmxl3/cancel",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"sub_T4Zv0CyVJQmxl3",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Subscriptions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/v1/user/6a38ba5124841eac3628c97e",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"user",
+								"6a38ba5124841eac3628c97e"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Subscription Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/v1/sub_T4Zv0CyVJQmxl3/status/active",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"sub_T4Zv0CyVJQmxl3",
+								"status",
+								"active"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subscription By Razorpay ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/v1/razorpay/sub_T4Zv0CyVJQmxl3",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"razorpay",
+								"sub_T4Zv0CyVJQmxl3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Subscription Signature",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"razorpay_payment_id\": \"pay_OKd72hdb76Hsd\",\n    \"razorpay_subscription_id\": \"sub_T4Zv0CyVJQmxl3\",\n    \"razorpay_signature\": \"65c3de765a0b7cf53...\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/verify",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Receive Webhook Event",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"event\": \"subscription.charged\",\n    \"payload\": {\n        \"subscription\": {\n            \"entity\": {\n                \"id\": \"sub_T4Zv0CyVJQmxl3\",\n                \"status\": \"active\"\n            }\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/webhook",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"webhook"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

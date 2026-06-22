@@ -9,6 +9,8 @@ const PORT = process.env.PORT || 3000;
 const connectDB = require("./config/db");
 require("./models/userModel");
 require("./models/productInfoModel");
+require("./models/productOrderModel");
+require("./models/shipmentModel");
 const productOrderRoutes = require("./routes/productOrderRoute");
 const shipmentRoutes = require("./routes/shipmentRoute");
 const authRoutes = require("./routes/authRoutes");
@@ -42,7 +44,10 @@ const limiter = rateLimit({
 });
 app.use("/api", limiter);
 
-app.use("/labels", express.static(path.join(__dirname, "labels")));
+const { authenticateJWT } = require("./middlewares/authMiddleware");
+const labelController = require("./controllers/labelController");
+
+app.get("/labels/:filename", authenticateJWT, labelController.serveLabel);
 app.use("/api/auth", authRoutes); 
 
 app.use(

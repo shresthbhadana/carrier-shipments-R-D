@@ -1,21 +1,13 @@
 const mongoose = require("mongoose");
 const shipmentRepository = require("../repository/shipmentRepository");
-const canadaPostService = require("./canadaPostService");
-const shipmozoService = require("./shipmozoService");
-const fedexService = require("./fedexService");
-const porulatorService = require("./porulatorService");
+const productOrderRepository = require("../repository/productOrderRepository");
 const fs = require("fs");
 const path = require("path");
-
-const getCarrierService = (courierName) => {
-    if (!courierName) return fedexService;
-    const name = courierName.toLowerCase().trim();
-    if (name.includes("fedex")) return fedexService;
-    if (name.includes("purolator") || name.includes("populator") || name.includes("porulator")) return porulatorService;
-    if (name.includes("canada") || name.includes("postal")) return canadaPostService;
-    if (name.includes("delhivery") || name.includes("bluedart") || name.includes("shipmozo")) return shipmozoService;
-    return fedexService;
-};
+const { getCarrierService } = require("./carrierFactory");
+const fedexService = require("./fedexService");
+const canadaPostService = require("./canadaPostService");
+const shipmozoService = require("./shipmozoService");
+const purolatorService = require("./purolatorService");
 const createShipment = async (payload) => {
     if (!payload.orderId) {
         throw new Error("Order Id is required");
@@ -129,11 +121,10 @@ const getRates = async (payload) => {
             weight: payload.weight,
             cod: payload.cod
         }),
-        porulatorService.fetchRates({
-         pickupPincode: payload.pickupPincode,
+        purolatorService.fetchRates({
+            pickupPincode: payload.pickupPincode,
             deliveryPincode: payload.deliveryPincode,
             weight: payload.weight,
-
             cod: payload.cod
         })
     ]);
@@ -141,7 +132,7 @@ const getRates = async (payload) => {
     const shipmozoRates = results[0].status === "fulfilled" ? results[0].value : [];
     const canadaPostRates = results[1].status === "fulfilled" ? results[1].value : [];
     const fedexRates = results[2].status === "fulfilled" ? results[2].value : [];
-    const porulatorRates = results[3].status === "fulfilled" ? results[3].value : [];
+    const purolatorRates = results[3].status === "fulfilled" ? results[3].value : [];
 
     if (results[0].status === "rejected") {
         console.error("Shipmozo fetch rates error:", results[0].reason.message);
@@ -156,7 +147,7 @@ const getRates = async (payload) => {
         console.error("Purolator fetch rates error:", results[3].reason.message);
     }
 
-    return [...shipmozoRates, ...canadaPostRates, ...fedexRates, ...porulatorRates];
+    return [...shipmozoRates, ...canadaPostRates, ...fedexRates, ...purolatorRates];
 };
 
 const trackShipment = async (shipmentId) => {
@@ -202,7 +193,6 @@ const cancelShipment = async (shipmentId) => {
 
     await shipmentRepository.updateShipment(shipmentId, { status: "cancelled" });
 
-    const productOrderRepository = require("../repository/productOrderRepository");
     await productOrderRepository.updateOrder(shipment.orderId._id || shipment.orderId, { orderStatus: "cancelled" });
 
     return { success: true, message: "Order and shipment cancelled successfully" };
@@ -239,7 +229,6 @@ const initiateReturn = async (shipmentId, returnData) => {
         status: returnShipmentResult.status
     });
 
-    const productOrderRepository = require("../repository/productOrderRepository");
     await productOrderRepository.updateOrder(shipment.orderId._id || shipment.orderId, {
         orderStatus: "returned"
     });
@@ -268,7 +257,7 @@ const getLabel = async (shipmentId) => {
     }
 
     const labelBuffer = await carrierService.getLabel(shipment.awbNumber);
-    if (!labelBuffer) throw new Error("Failed to fetch label from FedEx");
+    if (!labelBuffer) throw new Error(`Failed to fetch label for ${shipment.courierName }`);
 
     if (!fs.existsSync(dir)) {
         await fs.promises.mkdir(dir, { recursive: true });

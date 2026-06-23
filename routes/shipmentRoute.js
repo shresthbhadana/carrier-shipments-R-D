@@ -12,7 +12,9 @@ const {
     updateShipmentSchema, 
     rateQuerySchema,
     objectIdSchema,
-    initiateReturnSchema 
+    initiateReturnSchema,
+    schedulePickupSchema,
+    getLocationsSchema
 } = require("../validators/shipmentValidator");
 const validateParams = (schema) => (req, res, next) => {
     const { error } = schema.validate(req.params);
@@ -24,9 +26,9 @@ const validateParams = (schema) => (req, res, next) => {
     }
     next();
 };
-//authentication midddleware
+
 const {authenticateJWT} = require("../middlewares/authMiddleware");
-//ownershipMiddleware
+
 const {verifyShipmentOwnership} = require("../middlewares/ownershipMiddleware");
 
 router.use(authenticateJWT)
@@ -50,6 +52,12 @@ router.post(
 router.get(
     "/",
     shipmentController.getAllShipments
+);
+
+router.get(
+    "/locations",
+    validate(getLocationsSchema, "query"),
+    shipmentController.getLocations
 );
 
 router.get(
@@ -85,5 +93,19 @@ router.post(
     shipmentController.initiateReturn
 );
 
+router.get(
+    "/:id/track",
+    validateParams(objectIdSchema),
+    verifyShipmentOwnership,
+    shipmentController.trackShipment
+);
+
+router.post(
+    "/:id/pickup",
+    validateParams(objectIdSchema),
+    validate(schedulePickupSchema),
+    verifyShipmentOwnership,
+    shipmentController.schedulePickup
+);
 
 module.exports = router;

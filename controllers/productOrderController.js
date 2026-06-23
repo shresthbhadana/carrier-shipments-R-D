@@ -36,10 +36,12 @@ const getOrderById = async (req, res, next) => {
 const getAllOrders = async (req, res, next) => {
     try {
         const { page = 1, limit = 10, sort = "-createdAt" } = req.query;
+        const userId = req.user && req.user.role === "admin" ? null : req.user?.id;
         const result = await productOrderService.getAllOrders({
             page: parseInt(page),
             limit: parseInt(limit),
-            sort
+            sort,
+            userId
         });
 
         res.status(200).json({

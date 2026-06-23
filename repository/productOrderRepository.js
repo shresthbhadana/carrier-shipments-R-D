@@ -9,17 +9,18 @@ const findById = async (orderId) => {
 }
 
 const updateOrder = async (orderId, data) => {
-    return ProductOrder.findByIdAndUpdate(orderId, data, { new: true });
+    return ProductOrder.findByIdAndUpdate(orderId, data, { new: true,runValidators: true });
 }
 const findAllProduct = async (options = {}) => {
-    const { page = 1, limit = 10, sort = "-createdAt" } = options;
+    const { page = 1, limit = 10, sort = "-createdAt", userId } = options;
     const skip = (page - 1) * limit;
 
-    const query = ProductOrder.find().populate("userId");
+    const filter = userId ? { userId } : {};
+    const query = ProductOrder.find(filter).populate("userId");
 
     const [data, total] = await Promise.all([
         query.sort(sort).skip(Number(skip)).limit(Number(limit)),
-        ProductOrder.countDocuments()
+        ProductOrder.countDocuments(filter)
     ]);
 
     return {

@@ -117,7 +117,7 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
         }));
     } catch (error) {
         console.error("FedEx fetchRates error (falling back to mock):", error.message);
-     
+        checkMockAllowed("FedEx");
         return [
             { courierId: "FEDEX_GROUND", courierName: "FedEx Ground", shippingPrice: 50, estimatedDays: 4, serviceType: "Standard" }
         ];

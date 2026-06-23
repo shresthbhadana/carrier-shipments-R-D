@@ -185,6 +185,7 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 1.0, cod = 
         ];
     } catch (err) {
         console.error("Purolator fetchRates error, falling back to mock:", err.message);
+        checkMockAllowed("Purolator");
         return [
             {
                 courierId: "PUROLATOR_EXPRESS_9AM",
@@ -385,13 +386,66 @@ async function trackShipment(awbNumber) {
     }
 }
 
+async function createShipmentOrder(orderDetails) {
+    const headers = await getAuthHeader();
+    if (!headers) {
+        checkMockAllowed("Purolator");
+        const randomAWB = "PUR" + Math.floor(1000000000 + Math.random() * 9000000000);
+        return {
+            success: true,
+            courierName: orderDetails.courierName || "Purolator Express",
+            trackingId: randomAWB,
+            awbNumber: randomAWB,
+            status: "created"
+        };
+    }
+    throw new Error("Purolator createShipmentOrder real API is not fully implemented. Set MOCK_CARRIERS=true to use mocks.");
+}
+
+async function cancelShipmentOrder(orderId, awbNumber) {
+    const headers = await getAuthHeader();
+    if (!headers) {
+        checkMockAllowed("Purolator");
+        return { success: true, orderId: orderId, referenceId: awbNumber };
+    }
+    throw new Error("Purolator cancelShipmentOrder real API is not fully implemented. Set MOCK_CARRIERS=true to use mocks.");
+}
+
+async function createReturnShipmentOrder(orderDetails) {
+    const headers = await getAuthHeader();
+    if (!headers) {
+        checkMockAllowed("Purolator");
+        const randomAWB = "PURR" + Math.floor(1000000000 + Math.random() * 9000000000);
+        return {
+            success: true,
+            courierName: "Purolator Express",
+            trackingId: randomAWB,
+            awbNumber: randomAWB,
+            status: "return_created"
+        };
+    }
+    throw new Error("Purolator createReturnShipmentOrder real API is not fully implemented. Set MOCK_CARRIERS=true to use mocks.");
+}
+
+async function getLabel(awbNumber) {
+    const headers = await getAuthHeader();
+    const mockPDF = Buffer.from(
+        `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 64 >>\nstream\nBT\n/F1 24 Tf\n100 700 Td\n(Mock Purolator Shipping Label for AWB: ${awbNumber}) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000009 00000 n\n0000000056 00000 n\n0000000111 00000 n\n0000000212 00000 n\ntrailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n326\n%%EOF`
+    );
+    if (!headers) {
+        checkMockAllowed("Purolator");
+        return mockPDF;
+    }
+    throw new Error("Purolator getLabel real API is not fully implemented. Set MOCK_CARRIERS=true to use mocks.");
+}
+
 module.exports = {
-    fetchRates,
     fetchRates,
     getLocations,
     getpickup,
-     getpickup,
     trackShipment,
-     trackShipment
+    createShipmentOrder,
+    cancelShipmentOrder,
+    createReturnShipmentOrder,
+    getLabel
 };
-

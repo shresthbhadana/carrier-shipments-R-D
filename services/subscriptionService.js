@@ -46,11 +46,12 @@ const planName = payload.planName;
             }
         });
 
-        const totalAmount = Number((amount * 1.18).toFixed(2));
+        const taxRate = parseFloat(process.env.TAX_RATE || "0.18");
+        const totalAmount = Number((amount * (1 + taxRate)).toFixed(2));
 
         return {
             ...plan,
-            amount: `${amount} + 18% GST`,
+            amount: `${amount} + ${taxRate * 100}% GST`,
             totalAmount
         };
 
@@ -226,7 +227,10 @@ const verifySubscriptionSignature = async ({
     razorpay_signature
 }) => {
     try {
-        const secret = process.env.RAZORPAY_TEST_SECRET;
+        const isProduction = process.env.NODE_ENV === "production";
+        const secret = isProduction
+            ? (process.env.RAZORPAY_LIVE_SECRET || process.env.RAZORPAY_KEY_SECRET)
+            : process.env.RAZORPAY_TEST_SECRET;
         if (!secret) {
             throw new Error("Razorpay secret is not configured");
         }

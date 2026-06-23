@@ -9,15 +9,20 @@ const ShipmentSchema = new mongoose.Schema(
 
         courierName: String,
         trackingId: String,
-        awbNumber: String,
+        awbNumber: {
+            type: String,
+            index: true
+        },
 
         shippingPrice: Number,
 
         status: {
             type: String,
+            enum: ["pending", "created", "shipped", "delivered", "cancelled", "pending_booking", "return_created"],
             default: "created"
         },
-        pickupConfirmationNumber: String
+        pickupConfirmationNumber: String,
+        labelUrl: String
     },
     {
         timestamps: true

@@ -4,6 +4,17 @@ const dotenv = require("dotenv");
 const helmet = require("helmet");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
+dotenv.config();
+
+if (!process.env.JWT_SECRET) {
+    console.error("CRITICAL ERROR: JWT_SECRET environment variable is missing.");
+    process.exit(1);
+}
+if (process.env.JWT_SECRET.length < 32) {
+    console.error("CRITICAL ERROR: JWT_SECRET is too short. It must be at least 32 characters.");
+    process.exit(1);
+}
+
 const PORT = process.env.PORT || 3000; 
 
 const connectDB = require("./config/db");
@@ -20,9 +31,20 @@ const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const errorHandler = require("./middlewares/errorMiddleware");
 
 
-dotenv.config();
+
 
 const app = express();
+
+app.get("/health", (req, res) => {
+    const mongoose = require("mongoose");
+    const dbConnected = mongoose.connection.readyState === 1;
+    res.status(dbConnected ? 200 : 503).json({
+        status: dbConnected ? "UP" : "DOWN",
+        database: dbConnected ? "CONNECTED" : "DISCONNECTED",
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
+});
 
 app.use(helmet());
 app.use(cors());
@@ -72,4 +94,8 @@ const startServer = async () => {
     }
 };
 
-startServer();
+if (require.main === module) {
+    startServer();
+}
+
+module.exports = app;

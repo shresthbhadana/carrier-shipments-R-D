@@ -72,6 +72,14 @@ const cancelSubscription = async(req,res,next)=>{
 const getUserSubscription = async(req,res,next)=>{
     try{
         const userId = req.params.userId || req.user?.id;
+
+        if (userId !== req.user?.id) {
+            return res.status(403).json({
+                success: false,
+                message: ["Forbidden: You do not have access to this user's subscriptions"]
+            });
+        }
+
         const limit = parseInt(req.query.limit) || 10;
         const skip = parseInt(req.query.skip) || 0;
         const subscription = await subscriptionService.getUserSubscriptions({ userId, limit, skip })

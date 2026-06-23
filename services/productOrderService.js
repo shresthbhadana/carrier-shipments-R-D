@@ -1,19 +1,8 @@
 const productOrderRepository = require("../repository/productOrderRepository");
 const shipmentRepository = require("../repository/shipmentRepository");
-const fedexService = require("./fedexService");
-const canadaPostService = require("./canadaPostService");
-const shipmozoService = require("./shipmozoService");
 const mongoose = require("mongoose");
 const Product = require("../models/productInfoModel");
-
-const getCarrierService = (courierName) => {
-    if (!courierName) return fedexService;
-    const name = courierName.toLowerCase().trim();
-    if (name.includes("fedex")) return fedexService;
-    if (name.includes("canada") || name.includes("postal")) return canadaPostService;
-    if (name.includes("delhivery") || name.includes("bluedart") || name.includes("shipmozo")) return shipmozoService;
-    return fedexService;
-};
+const { getCarrierService } = require("./carrierFactory");
 
 const createProductOrder = async (payload) => {
     if (!payload.userId) {
@@ -106,6 +95,7 @@ const createProductOrder = async (payload) => {
         const order = orders[0];
         
         let shipmentResult;
+        let isBookingFailed = false;
         try {
             shipmentResult = await carrierService.createShipmentOrder({
                 orderId: order._id,
@@ -116,7 +106,19 @@ const createProductOrder = async (payload) => {
                 courierName: courierName
             });
         } catch (bookingError) {
-            throw new Error(`Carrier Booking failed: ${bookingError.message}`);
+            // ROLLBACK & RETRY POLICY:
+            // If the external carrier booking fails (e.g. carrier API is offline or returns error),
+            // instead of aborting the transaction and losing the customer's order, we save the order
+            // with a status of 'pending_booking'. A separate background job or worker should periodically
+            // retry booking shipments that are in 'pending_booking' status.
+            console.error(`Carrier Booking failed: ${bookingError.message}. Saving order in pending_booking status.`);
+            isBookingFailed = true;
+            shipmentResult = {
+                courierName: courierName,
+                trackingId: null,
+                awbNumber: null,
+                status: "pending_booking"
+            };
         }
         
         const shipments = await Shipment.create([{
@@ -133,7 +135,7 @@ const createProductOrder = async (payload) => {
             order._id, 
             {
                 shipmentId: shipment._id,
-                orderStatus: shipmentResult.trackingId ? "processing" : "pending"
+                orderStatus: isBookingFailed ? "pending_booking" : (shipmentResult.trackingId ? "processing" : "pending")
             }, 
             { session, new: true }
         );

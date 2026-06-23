@@ -12,6 +12,11 @@ jest.mock("fs", () => ({
     }
 }));
 
+jest.mock("axios");
+jest.mock("undici", () => ({
+    request: jest.fn()
+}));
+
 const mockOrderId = "60c72b2f9b1d8e2568cf9571";
 const mockShipmentId = "60c72b2f9b1d8e2568cf9573";
 
@@ -50,7 +55,8 @@ jest.mock("./repository/productOrderRepository", () => {
 
 const canadaPostService = require("./services/canadaPostService");
 const shipmentService = require("./services/shipmentService");
-const porulatorService = require("./services/porulatorService");
+const purolatorService = require("./services/purolatorService");
+const fedexService = require("./services/fedexService");
 
 describe("YellowDodle Shipment Integration Tests", () => {
     afterEach(() => {
@@ -104,8 +110,8 @@ describe("YellowDodle Shipment Integration Tests", () => {
         expect(cancelResult.message).toContain("cancelled successfully");
     });
 
-    test("6. porulatorService.fetchRates should return Purolator rates", async () => {
-        const rates = await porulatorService.fetchRates({
+    test("6. purolatorService.fetchRates should return Purolator rates", async () => {
+        const rates = await purolatorService.fetchRates({
             pickupPincode: "K1A0B1",
             deliveryPincode: "K1A0B2",
             weight: 1.0
@@ -114,8 +120,8 @@ describe("YellowDodle Shipment Integration Tests", () => {
         expect(rates[0].courierName).toContain("Purolator");
     });
 
-    test("7. porulatorService.trackShipment should return Purolator status details", async () => {
-        const tracking = await porulatorService.trackShipment("PUR12345678");
+    test("7. purolatorService.trackShipment should return Purolator status details", async () => {
+        const tracking = await purolatorService.trackShipment("PUR12345678");
         expect(tracking.success).toBe(true);
         expect(tracking.data.awb_number).toBe("PUR12345678");
     });
@@ -148,5 +154,78 @@ describe("YellowDodle Shipment Integration Tests", () => {
         });
         expect(result.locations).toBeDefined();
         expect(result.locations.length).toBeGreaterThan(0);
+    });
+
+    test("10. fedexService.fetchRates should throw error on API failure when MOCK_CARRIERS is false", async () => {
+        const originalMockCarriers = process.env.MOCK_CARRIERS;
+        const originalClientId = process.env.FEDEX_CLIENT_ID;
+        const originalClientSecret = process.env.FEDEX_CLIENT_SECRET;
+        
+        process.env.MOCK_CARRIERS = "false";
+        process.env.FEDEX_CLIENT_ID = "dummy";
+        process.env.FEDEX_CLIENT_SECRET = "dummy";
+
+        const mockFetch = jest.fn()
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ access_token: "dummy_token" })
+            })
+            .mockRejectedValueOnce(new Error("API rate limit exceeded"));
+
+        const originalGlobalFetch = global.fetch;
+        global.fetch = mockFetch;
+
+        try {
+            await fedexService.fetchRates({
+                pickupPincode: "122001",
+                deliveryPincode: "122002",
+                weight: 1.0
+            });
+            throw new Error("Should have thrown an error");
+        } catch (error) {
+            expect(error.message).toContain("Credentials missing for FedEx. Fail-fast in production");
+        } finally {
+            global.fetch = originalGlobalFetch;
+            process.env.MOCK_CARRIERS = originalMockCarriers;
+            process.env.FEDEX_CLIENT_ID = originalClientId;
+            process.env.FEDEX_CLIENT_SECRET = originalClientSecret;
+        }
+    });
+
+    test("11. purolatorService.fetchRates should throw error on API failure when MOCK_CARRIERS is false", async () => {
+        const originalMockCarriers = process.env.MOCK_CARRIERS;
+        const originalApiKey = process.env.PUROLATOR_API_KEY;
+        const originalApiSecret = process.env.PUROLATOR_API_SECRET;
+        
+        process.env.MOCK_CARRIERS = "false";
+        process.env.PUROLATOR_API_KEY = "dummy";
+        process.env.PUROLATOR_API_SECRET = "dummy";
+
+        const axios = require("axios");
+        const undici = require("undici");
+
+        axios.post.mockResolvedValueOnce({
+            data: {
+                access_token: "dummy_token",
+                expires_in: 3600
+            }
+        });
+
+        undici.request.mockRejectedValueOnce(new Error("Purolator internal server error"));
+
+        try {
+            await purolatorService.fetchRates({
+                pickupPincode: "H3Z2Y7",
+                deliveryPincode: "H3Z2Y8",
+                weight: 1.0
+            });
+            throw new Error("Should have thrown an error");
+        } catch (error) {
+            expect(error.message).toContain("Credentials missing for Purolator. Fail-fast in production");
+        } finally {
+            process.env.MOCK_CARRIERS = originalMockCarriers;
+            process.env.PUROLATOR_API_KEY = originalApiKey;
+            process.env.PUROLATOR_API_SECRET = originalApiSecret;
+        }
     });
 });

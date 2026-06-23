@@ -38,13 +38,13 @@ const loginUser = async(payload)=>{
 
     const user = await userRepository.findByEmail(email);
     if(!user) {
-        throw new Error("User not found");
+        throw new Error("Invalid credentials");
     }
 
     const isMatch = await user.matchPassword(password);
 
     if(!isMatch) {
-        throw new Error("Invalid password");
+        throw new Error("Invalid credentials");
     }
 
     const token = generateToken(user._id);

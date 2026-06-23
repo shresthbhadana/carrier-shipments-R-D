@@ -100,4 +100,43 @@ describe("YellowDodle Order Integration Tests", () => {
         expect(resultOrder.totalAmount).toBe(resultOrder.subtotal + resultOrder.shippingPrice);
         expect(mockSession.commitTransaction).toHaveBeenCalled();
     });
+
+    test("2. productOrderService.createProductOrder should save order with pending_booking status when carrier booking fails", async () => {
+        const payload = {
+            userId: mockUserId,
+            products: [{ productId: mockProductId, quantity: 1 }],
+            pickupPincode: "K1A0B1",
+            deliveryPincode: "K1A0B2",
+            customerName: "Integration Test User",
+            customerPhone: "9876543210",
+            weight: 1.0,
+            courierName: "Canada Post Regular Parcel"
+        };
+
+        const canadaPostService = require("./services/canadaPostService");
+        jest.spyOn(canadaPostService, "createShipmentOrder").mockRejectedValueOnce(new Error("Canada Post booking service down"));
+
+        const ProductOrder = require("./models/productOrderModel");
+        const findByIdAndUpdateSpy = jest.spyOn(ProductOrder, "findByIdAndUpdate").mockResolvedValue({
+            ...mockOrder,
+            orderStatus: "pending_booking"
+        });
+
+        const productOrderRepository = require("./repository/productOrderRepository");
+        jest.spyOn(productOrderRepository, "findById").mockResolvedValue({
+            ...mockOrder,
+            orderStatus: "pending_booking"
+        });
+
+        const resultOrder = await productOrderService.createProductOrder(payload);
+
+        expect(resultOrder).toBeDefined();
+        expect(resultOrder.orderStatus).toBe("pending_booking");
+        expect(findByIdAndUpdateSpy).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({ orderStatus: "pending_booking" }),
+            expect.any(Object)
+        );
+        expect(mockSession.commitTransaction).toHaveBeenCalled();
+    });
 });

@@ -3,7 +3,7 @@ const fs = require("fs");
 
 process.env.MOCK_CARRIERS = "true";
 
-// Mock FS to prevent writing files to disk during test run
+
 jest.mock("fs", () => ({
     existsSync: jest.fn().mockReturnValue(false),
     promises: {
@@ -33,13 +33,13 @@ const mockShipment = {
 mongoose.connect = jest.fn().mockResolvedValue(true);
 mongoose.disconnect = jest.fn().mockResolvedValue(true);
 
-jest.mock("./models/shipmentModel", () => {
+jest.mock("../models/shipmentModel", () => {
     return {
         create: jest.fn().mockImplementation((arr) => Promise.resolve([{ ...arr[0], _id: mockShipmentId }]))
     };
 });
 
-jest.mock("./repository/shipmentRepository", () => {
+jest.mock("../repository/shipmentRepository", () => {
     return {
         createShipment: jest.fn().mockImplementation((payload) => Promise.resolve({ ...payload, _id: mockShipmentId })),
         findById: jest.fn().mockResolvedValue(mockShipment),
@@ -47,16 +47,16 @@ jest.mock("./repository/shipmentRepository", () => {
     };
 });
 
-jest.mock("./repository/productOrderRepository", () => {
+jest.mock("../repository/productOrderRepository", () => {
     return {
         updateOrder: jest.fn().mockResolvedValue({ orderStatus: "returned" })
     };
 });
 
-const canadaPostService = require("./services/canadaPostService");
-const shipmentService = require("./services/shipmentService");
-const purolatorService = require("./services/purolatorService");
-const fedexService = require("./services/fedexService");
+const canadaPostService = require("../services/canadaPostService");
+const shipmentService = require("../services/shipmentService");
+const purolatorService = require("../services/purolatorService");
+const fedexService = require("../services/fedexService");
 
 describe("YellowDodle Shipment Integration Tests", () => {
     afterEach(() => {
@@ -132,7 +132,7 @@ describe("YellowDodle Shipment Integration Tests", () => {
             courierName: "Purolator Express",
             awbNumber: "PUR12345678"
         };
-        const shipmentRepository = require("./repository/shipmentRepository");
+        const shipmentRepository = require("../repository/shipmentRepository");
         jest.spyOn(shipmentRepository, "findById").mockResolvedValueOnce(mockPurolatorShipment);
 
         const pickupData = {
@@ -229,3 +229,54 @@ describe("YellowDodle Shipment Integration Tests", () => {
         }
     });
 });
+
+
+const upsService= require("../services/upsService");
+test("12. ups result should return UPS rates",async()=>{
+    const rates = await upsService.fetchRates({
+        pickupPincode:"K1A0B1",
+        deliveryPincode : "K1A0B2",
+        weight:1.0,
+
+    })
+    expect(Array.isArray(rates)).toBe(true);
+    expect(rates[0].courierName).toContain("UPS")
+})
+
+  test("13. upsService.trackShipment should return UPS status details", async () => {
+        const tracking = await upsService.trackShipment("1Z1234567890123456");
+        expect(tracking.success).toBe(true);
+        expect(tracking.data.awb_number).toBe("1Z1234567890123456");
+    });
+    test("14. upsService.fetchRates should throw error on API failure when MOCK_CARRIERS is false", async () => {
+        const originalMockCarriers = process.env.MOCK_CARRIERS;
+        const originalClientId = process.env.UPS_CLIENT_ID;
+        const originalClientSecret = process.env.UPS_CLIENT_SECRET;
+        
+        process.env.MOCK_CARRIERS = "false";
+        process.env.UPS_CLIENT_ID = "dummy";
+        process.env.UPS_CLIENT_SECRET = "dummy";
+        const mockFetch = jest.fn()
+            .mockResolvedValueOnce({
+                ok: true,
+                json: () => Promise.resolve({ access_token: "dummy_token" })
+            })
+            .mockRejectedValueOnce(new Error("UPS API rate limit exceeded"));
+        const originalGlobalFetch = global.fetch;
+        global.fetch = mockFetch;
+        try {
+            await upsService.fetchRates({
+                pickupPincode: "K1A0B1",
+                deliveryPincode: "K1A0B2",
+                weight: 1.0
+            });
+            throw new Error("Should have thrown an error");
+        } catch (error) {
+            expect(error.message).toContain("Credentials missing for UPS. Fail-fast in production");
+        } finally {
+            global.fetch = originalGlobalFetch;
+            process.env.MOCK_CARRIERS = originalMockCarriers;
+            process.env.UPS_CLIENT_ID = originalClientId;
+            process.env.UPS_CLIENT_SECRET = originalClientSecret;
+        }
+    });

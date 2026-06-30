@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 
-// Mock Mongoose connection
+
 mongoose.connect = jest.fn().mockResolvedValue(true);
 mongoose.disconnect = jest.fn().mockResolvedValue(true);
 
 const mockUserId = "60c72b2f9b1d8e2568cf9570";
 
-jest.mock("./config/razorpay", () => {
+jest.mock("../config/razorpay", () => {
     return {
         plans: {
             create: jest.fn().mockResolvedValue({
@@ -49,7 +49,7 @@ jest.mock("./config/razorpay", () => {
     };
 });
 
-jest.mock("./repository/subscriptionRepository", () => {
+jest.mock("../repository/subscriptionRepository", () => {
     return {
         create: jest.fn().mockImplementation((payload) => Promise.resolve({ ...payload, _id: "sub_db_123" })),
         findBySubscriptionId: jest.fn().mockResolvedValue({
@@ -81,7 +81,7 @@ jest.mock("./repository/subscriptionRepository", () => {
     };
 });
 
-const subscriptionService = require("./services/subscriptionService");
+const subscriptionService = require("../services/subscriptionService");
 
 describe("YellowDodle Subscription Integration Tests", () => {
     afterEach(() => {

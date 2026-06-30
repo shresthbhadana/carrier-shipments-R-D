@@ -40,40 +40,40 @@ const mockOrder = {
     shipmentId: mockShipmentId
 };
 
-jest.mock("./models/productInfoModel", () => {
+jest.mock("../models/productInfoModel", () => {
     return {
         find: jest.fn().mockResolvedValue([{ _id: mockProductId, price: 1500 }])
     };
 });
 
-jest.mock("./models/productOrderModel", () => {
+jest.mock("../models/productOrderModel", () => {
     return {
         create: jest.fn().mockImplementation((arr) => Promise.resolve([{ ...arr[0], _id: mockOrderId }])),
         findByIdAndUpdate: jest.fn().mockResolvedValue({ ...mockOrder, orderStatus: "processing" })
     };
 });
 
-jest.mock("./models/shipmentModel", () => {
+jest.mock("../models/shipmentModel", () => {
     return {
         create: jest.fn().mockImplementation((arr) => Promise.resolve([{ ...arr[0], _id: mockShipmentId }]))
     };
 });
 
 
-jest.mock("./repository/productOrderRepository", () => {
+jest.mock("../repository/productOrderRepository", () => {
     return {
         findById: jest.fn().mockResolvedValue(mockOrder),
         updateOrder: jest.fn().mockResolvedValue({ ...mockOrder, orderStatus: "cancelled" })
     };
 });
 
-jest.mock("./repository/shipmentRepository", () => {
+jest.mock("../repository/shipmentRepository", () => {
     return {
         createShipment: jest.fn().mockImplementation((payload) => Promise.resolve({ ...payload, _id: mockShipmentId }))
     };
 });
 
-const productOrderService = require("./services/productOrderService");
+const productOrderService = require("../services/productOrderService");
 
 describe("YellowDodle Order Integration Tests", () => {
     afterEach(() => {
@@ -113,16 +113,16 @@ describe("YellowDodle Order Integration Tests", () => {
             courierName: "Canada Post Regular Parcel"
         };
 
-        const canadaPostService = require("./services/canadaPostService");
+        const canadaPostService = require("../services/canadaPostService");
         jest.spyOn(canadaPostService, "createShipmentOrder").mockRejectedValueOnce(new Error("Canada Post booking service down"));
 
-        const ProductOrder = require("./models/productOrderModel");
+        const ProductOrder = require("../models/productOrderModel");
         const findByIdAndUpdateSpy = jest.spyOn(ProductOrder, "findByIdAndUpdate").mockResolvedValue({
             ...mockOrder,
             orderStatus: "pending_booking"
         });
 
-        const productOrderRepository = require("./repository/productOrderRepository");
+        const productOrderRepository = require("../repository/productOrderRepository");
         jest.spyOn(productOrderRepository, "findById").mockResolvedValue({
             ...mockOrder,
             orderStatus: "pending_booking"

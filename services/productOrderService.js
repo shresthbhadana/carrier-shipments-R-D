@@ -106,11 +106,7 @@ const createProductOrder = async (payload) => {
                 courierName: courierName
             });
         } catch (bookingError) {
-            // ROLLBACK & RETRY POLICY:
-            // If the external carrier booking fails (e.g. carrier API is offline or returns error),
-            // instead of aborting the transaction and losing the customer's order, we save the order
-            // with a status of 'pending_booking'. A separate background job or worker should periodically
-            // retry booking shipments that are in 'pending_booking' status.
+            
             console.error(`Carrier Booking failed: ${bookingError.message}. Saving order in pending_booking status.`);
             isBookingFailed = true;
             shipmentResult = {

@@ -1,11 +1,11 @@
 const request = require("supertest");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
-const app = require("./index");
+const app = require("../index");
 
-const ProductOrder = require("./models/productOrderModel");
-const Shipment = require("./models/shipmentModel");
-const userRepository = require("./repository/userRepository");
+const ProductOrder = require("../models/productOrderModel");
+const Shipment = require("../models/shipmentModel");
+const userRepository = require("../repository/userRepository");
 
 // Mock mongoose connect/disconnect
 mongoose.connect = jest.fn().mockResolvedValue(true);
@@ -22,7 +22,7 @@ describe("Security and Authorization Integration Tests", () => {
     beforeAll(() => {
         process.env.JWT_SECRET = JWT_SECRET;
         myToken = jwt.sign({ id: myUserId }, JWT_SECRET, { expiresIn: "1h" });
-        // Mock mongoose connection readyState to be connected (1) for health check
+        
         Object.defineProperty(mongoose.connection, "readyState", {
             get: () => 1,
             configurable: true

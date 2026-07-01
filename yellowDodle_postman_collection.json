@@ -105,6 +105,41 @@
 			"name": "Orders",
 			"item": [
 				{
+					"name": "Create Product Order (Multi-package)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"642bb0ea00f1aa96d6ab2090\",\n    \"products\": [\n        {\n            \"productId\": \"642bb0ea00f1aa96d6ab2091\",\n            \"quantity\": 2\n        }\n    ],\n    \"pickupPincode\": \"K1A0B1\",\n    \"deliveryPincode\": \"K1A0B2\",\n    \"customerName\": \"Test Customer\",\n    \"customerPhone\": \"9876543210\",\n    \"courierName\": \"FedEx Ground\",\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        },\n        {\n            \"weight\": 2.0,\n            \"length\": 12,\n            \"width\": 12,\n            \"height\": 12\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Create Product Order",
 					"request": {
 						"method": "POST",
@@ -255,6 +290,80 @@
 		{
 			"name": "Shipments",
 			"item": [
+				{
+					"name": "Check Pickup Availability",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/pickup/availability?carrier=fedex&pickupPincode=K1A0B1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"pickup",
+								"availability"
+							],
+							"query": [
+								{
+									"key": "carrier",
+									"value": "fedex"
+								},
+								{
+									"key": "pickupPincode",
+									"value": "K1A0B1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shipping Rates (Multi-package)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pickupPincode\": \"K1A0B1\",\n    \"deliveryPincode\": \"K1A0B2\",\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        },\n        {\n            \"weight\": 2.0,\n            \"length\": 12,\n            \"width\": 12,\n            \"height\": 12\n        }\n    ],\n    \"cod\": false\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/rates",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"rates"
+							]
+						}
+					},
+					"response": []
+				},
 				{
 					"name": "Get Shipping Rates",
 					"request": {

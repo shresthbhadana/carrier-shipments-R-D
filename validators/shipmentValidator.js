@@ -21,7 +21,18 @@ const createShipmentSchema = Joi.object({
             "delivered",
             "cancelled"
         )
-        .default("created")
+        .default("created"),
+        packages: Joi.array()
+        .items(
+            Joi.object({
+                weight: Joi.number().min(0).required(),
+                length: Joi.number().min(0).required(),
+                width: Joi.number().min(0).required(),
+                height: Joi.number().min(0).required()
+            })
+        )
+        .min(1)
+        .optional(),
 });
 
 const updateShipmentSchema = Joi.object({
@@ -39,14 +50,36 @@ const updateShipmentSchema = Joi.object({
         "shipped",
         "delivered",
         "cancelled"
-    )
+    ),
+    packages: Joi.array()
+        .items(
+            Joi.object({
+                weight: Joi.number().min(0).required(),
+                length: Joi.number().min(0).required(),
+                width: Joi.number().min(0).required(),
+                height: Joi.number().min(0).required()
+            })
+        )
+        .min(1)
+        .optional(),
 });
 
 const rateQuerySchema = Joi.object({
     pickupPincode: Joi.string().required(),
     deliveryPincode: Joi.string().required(),
     weight: Joi.number().min(0).default(0.5),
-    cod: Joi.boolean().default(false)
+    cod: Joi.boolean().default(false),
+    packages: Joi.array()
+        .items(
+            Joi.object({
+                weight: Joi.number().min(0).required(),
+                length: Joi.number().min(0).required(),
+                width: Joi.number().min(0).required(),
+                height: Joi.number().min(0).required()
+            })
+        )
+        .min(1)
+        .optional(),
 });
 const objectIdSchema = Joi.object({
     id: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required().messages({
@@ -87,6 +120,11 @@ const getLocationsSchema = Joi.object({
     carrier: Joi.string().optional(),
     postalCode: Joi.string().required()
 });
+const pickupAvailabilitySchema = Joi.object({
+    carrier: Joi.string().required(),
+    pickupPincode: Joi.string().required(),
+    pickupDate: Joi.string().optional()
+});
 
 module.exports = {
     createShipmentSchema,
@@ -95,5 +133,6 @@ module.exports = {
     objectIdSchema,        
     initiateReturnSchema,
     schedulePickupSchema,
-    getLocationsSchema
+    getLocationsSchema,
+    pickupAvailabilitySchema
 };

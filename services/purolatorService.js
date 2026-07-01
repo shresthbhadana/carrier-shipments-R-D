@@ -74,8 +74,11 @@ async function getAuthHeader() {
 }
 
 
-async function fetchRates({ pickupPincode, deliveryPincode, weight = 1.0, cod = false }) {
+async function fetchRates({ pickupPincode, deliveryPincode, weight = 1.0, cod = false, packages }) {
     const authHeaders = await getAuthHeader();
+    const packagesArray = packages && packages.length > 0 ? packages : [{ weight: weight || 1.0 }];
+    const totalWeight = packagesArray.reduce((acc, p) => acc + p.weight, 0);
+
     let distanceFactor = 10;
     const p1 = parseInt(pickupPincode?.replace(/\D/g, ""));
     const p2 = parseInt(deliveryPincode?.replace(/\D/g, ""));
@@ -85,7 +88,7 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 1.0, cod = 
         distanceFactor = Math.abs(pickupPincode.charCodeAt(0) - deliveryPincode.charCodeAt(0)) * 5;
     }
 
-    const basePrice = 80 + (weight * 35) + (distanceFactor * 0.9);
+    const basePrice = 80 + (totalWeight * 35) + (distanceFactor * 0.9);
 
     if (!authHeaders) {
         checkMockAllowed("Purolator");
@@ -137,22 +140,20 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 1.0, cod = 
                         serviceId: 'PurolatorExpressBox9AM',
                         unitOfMeasurement: 'Imperial',
                         showAlternativeServicesIndicator: true,
-                        totalWeight: String(weight),
-                        totalPackages: 1,
+                        totalWeight: String(totalWeight),
+                        totalPackages: packagesArray.length,
                         shipmentOptionsInformation: [
                             {
                                 optionId: 'AdultSignatureRequired',
                                 optionIdValue: 'Yes'
                             }
                         ],
-                        packageInformation: [
-                            {
-                                packageWeight: String(weight),
-                                packageLength: '12.0',
-                                packageWidth: '12.0',
-                                packageHeight: '12.0'
-                            }
-                        ]
+                        packageInformation: packagesArray.map(pkg => ({
+                            packageWeight: String(pkg.weight),
+                            packageLength: String(pkg.length || 12.0),
+                            packageWidth: String(pkg.width || 12.0),
+                            packageHeight: String(pkg.height || 12.0)
+                        }))
                     }
                 }
             })
@@ -437,6 +438,25 @@ async function getLabel(awbNumber) {
         return mockPDF;
     }
     throw new Error("Purolator getLabel real API is not fully implemented. Set MOCK_CARRIERS=true to use mocks.");
+};
+async function checkPickupAvailability({ pickupPincode, pickupDate }) {
+    const cleanCode = pickupPincode?.trim().replace(/\s+/g, "");
+    const isValid = /^[A-Z]\d[A-Z]\d[A-Z]\d$/i.test(cleanCode);
+    if (!isValid) {
+        return {
+            available: false,
+            pickupFee: 0,
+            currency: "CAD",
+            availableTimeSlots: [],
+            message: "Pickup not available for this pincode/postal code"
+        };
+    }
+    return {
+        available: true,
+        pickupFee: 5.00,
+        currency: "CAD",
+        availableTimeSlots: ["09:00 - 12:00", "13:00 - 17:00"]
+    };
 }
 
 module.exports = {

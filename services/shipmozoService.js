@@ -38,14 +38,18 @@ async function getWarehouseId(headers) {
     return "";
 }
 
-async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = false }) {
+async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = false, packages }) {
     const headers = getAuthHeaders();
+    const packagesArray = packages && packages.length > 0 ? packages : [{ weight: weight || 0.5 }];
+    const totalWeight = packagesArray.reduce((acc, p) => acc + p.weight, 0);
 
     if (!headers) {
         checkMockAllowed("Shipmozo");
         // Fallback mock shipping rates for local development
-        const distanceFactor = Math.abs(parseInt(pickupPincode) - parseInt(deliveryPincode)) % 100;
-        const basePrice = 40 + (weight * 20) + (distanceFactor * 0.5);
+        const p1 = parseInt(pickupPincode?.replace(/\D/g, "") || "0");
+        const p2 = parseInt(deliveryPincode?.replace(/\D/g, "") || "0");
+        const distanceFactor = (!isNaN(p1) && !isNaN(p2)) ? (Math.abs(p1 - p2) % 100) : 10;
+        const basePrice = 40 + (totalWeight * 20) + (distanceFactor * 0.5);
         return [
             {
                 courierId: 1,
@@ -78,15 +82,13 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
                 type_of_package: "SPS",
                 rov_type: "ROV_OWNER",
                 cod_amount: "",
-                weight: Number(weight) * 1000, // Convert to grams as requested by API doc
-                dimensions: [
-                    {
-                        no_of_box: "1",
-                        length: "10",
-                        width: "10",
-                        height: "10"
-                    }
-                ]
+                weight: Number(totalWeight) * 1000, // Convert to grams as requested by API doc
+                dimensions: packagesArray.map((pkg, index) => ({
+                    no_of_box: String(index + 1),
+                    length: String(pkg.length || 10),
+                    width: String(pkg.width || 10),
+                    height: String(pkg.height || 10)
+                }))
             })
         });
 
@@ -132,6 +134,8 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
 
 async function createShipmentOrder(orderDetails) {
     const headers = getAuthHeaders();
+    const packagesArray = orderDetails.packages && orderDetails.packages.length > 0 ? orderDetails.packages : [{ weight: orderDetails.weight || 0.5 }];
+    const totalWeight = packagesArray.reduce((acc, p) => acc + p.weight, 0);
 
     if (!headers) {
         checkMockAllowed("Shipmozo");
@@ -176,10 +180,10 @@ async function createShipmentOrder(orderDetails) {
                 ],
                 payment_type: "PREPAID",
                 cod_amount: "",
-                weight: Number(orderDetails.weight || 0.5) * 1000, // in grams
-                length: 10,
-                width: 10,
-                height: 10,
+                weight: Number(totalWeight) * 1000, // in grams
+                length: Number(packagesArray[0].length || 10),
+                width: Number(packagesArray[0].width || 10),
+                height: Number(packagesArray[0].height || 10),
                 warehouse_id: String(warehouseId)
             })
         });
@@ -308,6 +312,8 @@ async function cancelShipmentOrder(orderId, awbNumber) {
 }
 async function createReturnShipmentOrder(orderDetails) {
     const headers = getAuthHeaders();
+    const packagesArray = orderDetails.packages && orderDetails.packages.length > 0 ? orderDetails.packages : [{ weight: orderDetails.weight || 0.5 }];
+    const totalWeight = packagesArray.reduce((acc, p) => acc + p.weight, 0);
 
     if (!headers) {
         checkMockAllowed("Shipmozo");
@@ -351,10 +357,10 @@ async function createReturnShipmentOrder(orderDetails) {
                     }
                 ],
                 payment_type: "PREPAID",
-                weight: Number(orderDetails.weight || 0.5) * 1000, // in grams
-                length: 10,
-                width: 10,
-                height: 10,
+                weight: Number(totalWeight) * 1000, // in grams
+                length: Number(packagesArray[0].length || 10),
+                width: Number(packagesArray[0].width || 10),
+                height: Number(packagesArray[0].height || 10),
                 warehouse_id: String(warehouseId),
                 return_reason_id: Number(orderDetails.returnReasonId || 14), // Default to 14 ("Other")
                 customer_request: orderDetails.customerRequest || "REFUND",
@@ -439,6 +445,25 @@ async function getLabel(awbNumber) {
         console.error("Shipmozo getLabel error, falling back to mock:", error.message);
         return mockPDF;
     }
+};
+async function checkPickupAvailability({ pickupPincode, pickupDate }) {
+    const cleanCode = pickupPincode?.trim();
+    const isValid = /^\d{6}$/.test(cleanCode); // 6-digit Indian PIN code validation
+    if (!isValid) {
+        return {
+            available: false,
+            pickupFee: 0,
+            currency: "INR",
+            availableTimeSlots: [],
+            message: "Pickup not available for this pincode/postal code"
+        };
+    }
+    return {
+        available: true,
+        pickupFee: 50.00,
+        currency: "INR",
+        availableTimeSlots: ["10:00 - 13:00", "14:00 - 18:00"]
+    };
 }
 
 module.exports = {
@@ -447,5 +472,6 @@ module.exports = {
     trackShipment,
     cancelShipmentOrder,
     createReturnShipmentOrder,
-    getLabel
+    getLabel,
+    checkPickupAvailability
 };

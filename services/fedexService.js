@@ -56,13 +56,17 @@ async function getAccessToken() {
 }
 
 
-async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = false }) {
+async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = false, packages }) {
     const token = await getAccessToken();
+    const packagesArray = packages && packages.length > 0 ? packages : [{ weight: weight || 0.5 }];
+    const totalWeight = packagesArray.reduce((acc, p) => acc + p.weight, 0);
 
     if (!token) {
         checkMockAllowed("FedEx");
-        const distanceFactor = Math.abs(parseInt(pickupPincode) - parseInt(deliveryPincode)) % 100;
-        const basePrice = 80 + (weight * 35) + (distanceFactor * 0.9); // FedEx typically higher rates
+        const p1 = parseInt(pickupPincode?.replace(/\D/g, "") || "0");
+        const p2 = parseInt(deliveryPincode?.replace(/\D/g, "") || "0");
+        const distanceFactor = (!isNaN(p1) && !isNaN(p2)) ? (Math.abs(p1 - p2) % 100) : 10;
+        const basePrice = 80 + (totalWeight * 35) + (distanceFactor * 0.9); // FedEx typically higher rates
         return [
             {
                 courierId: "FEDEX_GROUND",
@@ -96,9 +100,9 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
                     recipient: { address: { postalCode: deliveryPincode, countryCode: "CA" } },
                     pickupType: "CONTACT_FEDEX_TO_SCHEDULE",
                     rateRequestType: ["LIST"],
-                    requestedPackageLineItems: [
-                        { weight: { units: "KG", value: weight } }
-                    ]
+                    requestedPackageLineItems: packagesArray.map(pkg => ({
+                        weight: { units: "KG", value: Number(pkg.weight) }
+                    }))
                 }
             })
         });
@@ -126,6 +130,7 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
 
 async function createShipmentOrder(orderDetails) {
     const token = await getAccessToken();
+    const packagesArray = orderDetails.packages && orderDetails.packages.length > 0 ? orderDetails.packages : [{ weight: orderDetails.weight || 0.5 }];
 
     if (!token) {
         checkMockAllowed("FedEx");
@@ -166,9 +171,9 @@ async function createShipmentOrder(orderDetails) {
                         contact: { personName: orderDetails.customerName, phoneNumber: orderDetails.customerPhone.replace(/\D/g, "") },
                         address: { streetLines: ["Delivery Address"], city: "Ottawa", stateOrProvinceCode: "ON", postalCode: orderDetails.deliveryPincode, countryCode: "CA" }
                     },
-                    requestedPackageLineItems: [
-                        { weight: { units: "KG", value: Number(orderDetails.weight || 0.5) } }
-                    ]
+                    requestedPackageLineItems: packagesArray.map(pkg => ({
+                        weight: { units: "KG", value: Number(pkg.weight) }
+                    }))
                 }
             })
         });
@@ -308,6 +313,7 @@ async function cancelShipmentOrder(orderId, awbNumber) {
 
 async function createReturnShipmentOrder(orderDetails) {
     const token = await getAccessToken();
+    const packagesArray = orderDetails.packages && orderDetails.packages.length > 0 ? orderDetails.packages : [{ weight: orderDetails.weight || 0.5 }];
 
     if (!token) {
         checkMockAllowed("FedEx");
@@ -346,9 +352,9 @@ async function createReturnShipmentOrder(orderDetails) {
                         contact: { personName: "YellowDodle Return Center", phoneNumber: "1234567890" },
                         address: { streetLines: ["123 Returns Rd"], city: "Ottawa", stateOrProvinceCode: "ON", postalCode: "K1A0B1", countryCode: "CA" }
                     },
-                    requestedPackageLineItems: [
-                        { weight: { units: "KG", value: Number(orderDetails.weight || 0.5) } }
-                    ]
+                    requestedPackageLineItems: packagesArray.map(pkg => ({
+                        weight: { units: "KG", value: Number(pkg.weight) }
+                    }))
                 }
             })
         });
@@ -417,6 +423,25 @@ async function getLabel(awbNumber) {
         return mockPDF;
     }
 }
+async function checkPickupAvailability({ pickupPincode, pickupDate }) {
+    const cleanCode = pickupPincode?.trim().replace(/\s+/g, "");
+    const isValid = /^[A-Z]\d[A-Z]\d[A-Z]\d$/i.test(cleanCode);
+    if (!isValid) {
+        return {
+            available: false,
+            pickupFee: 0,
+            currency: "CAD",
+            availableTimeSlots: [],
+            message: "Pickup not available for this pincode/postal code"
+        };
+    }
+    return {
+        available: true,
+        pickupFee: 8.00,
+        currency: "CAD",
+        availableTimeSlots: ["09:00 - 12:00", "13:00 - 17:00"]
+    };
+}
 
 module.exports = {
     fetchRates,
@@ -424,5 +449,6 @@ module.exports = {
     trackShipment,
     cancelShipmentOrder,
     createReturnShipmentOrder,
-    getLabel
+    getLabel,
+    checkPickupAvailability
 };

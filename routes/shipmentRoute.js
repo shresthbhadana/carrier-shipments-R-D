@@ -14,7 +14,8 @@ const {
     objectIdSchema,
     initiateReturnSchema,
     schedulePickupSchema,
-    getLocationsSchema
+    getLocationsSchema,
+    pickupAvailabilitySchema
 } = require("../validators/shipmentValidator");
 const validateParams = (schema) => (req, res, next) => {
     const { error } = schema.validate(req.params);
@@ -58,6 +59,12 @@ router.get(
     "/locations",
     validate(getLocationsSchema, "query"),
     shipmentController.getLocations
+);
+
+router.get(
+    "/pickup/availability",
+    validate(pickupAvailabilitySchema, "query"),
+    shipmentController.checkPickupAvailability
 );
 
 router.get(

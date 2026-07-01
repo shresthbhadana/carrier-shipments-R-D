@@ -280,3 +280,44 @@ test("12. ups result should return UPS rates",async()=>{
             process.env.UPS_CLIENT_SECRET = originalClientSecret;
         }
     });
+
+    test("15. shipmentService.checkPickupAvailability should return correct pickup availability and fees for valid/invalid pincodes", async () => {
+        const resultVal = await shipmentService.checkPickupAvailability({
+            carrier: "ups",
+            pickupPincode: "K1A0B1"
+        });
+        expect(resultVal.available).toBe(true);
+        expect(resultVal.pickupFee).toBe(8.00); 
+        expect(resultVal.currency).toBe("CAD");
+
+        const resultInval = await shipmentService.checkPickupAvailability({
+            carrier: "ups",
+            pickupPincode: "invalid-pc"
+        });
+        expect(resultInval.available).toBe(false);
+        expect(resultInval.pickupFee).toBe(0);
+    });
+
+    test("16. carriers should support rates fetch with multiple packages", async () => {
+        const packages = [
+            { weight: 1.5, length: 10, width: 10, height: 10 },
+            { weight: 2.0, length: 12, width: 12, height: 12 }
+        ];
+
+        const ratesUps = await upsService.fetchRates({
+            pickupPincode: "K1A0B1",
+            deliveryPincode: "K1A0B2",
+            packages
+        });
+        expect(Array.isArray(ratesUps)).toBe(true);
+
+        const ratesCanadaPost = await canadaPostService.fetchRates({
+            pickupPincode: "K1A0B1",
+            deliveryPincode: "K1A0B2",
+            packages
+        });
+        expect(Array.isArray(ratesCanadaPost)).toBe(true);
+    });
+
+
+    

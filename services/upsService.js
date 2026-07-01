@@ -42,8 +42,10 @@ async function getAccessToken() {
         return null;
     }
 }
-async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = false }) {
+async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = false, packages }) {
     const token = await getAccessToken();
+    const packagesArray = packages && packages.length > 0 ? packages : [{ weight: weight || 0.5 }];
+    const totalWeight = packagesArray.reduce((acc, p) => acc + p.weight, 0);
     if (!token) {
         checkMockAllowed("UPS");
         let distanceFactor = 10;
@@ -54,7 +56,7 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
         } else if (pickupPincode && deliveryPincode) {
             distanceFactor = Math.abs(pickupPincode.charCodeAt(0) - deliveryPincode.charCodeAt(0)) * 5;
         }
-        const basePrice = 75 + (weight * 30) + (distanceFactor * 0.85);
+        const basePrice = 75 + (totalWeight * 30) + (distanceFactor * 0.85);
         return [
             {
                 courierId: "UPS_GROUND",
@@ -95,15 +97,13 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
                         ShipFrom: {
                             Address: { PostalCode: pickupPincode, CountryCode: "CA" }
                         },
-                        Package: [
-                            {
-                                PackagingType: { Code: "02" },
-                                PackageWeight: {
-                                    UnitOfMeasurement: { Code: "KGS" },
-                                    Weight: String(weight)
-                                }
+                        Package: packagesArray.map(pkg => ({
+                            PackagingType: { Code: "02" },
+                            PackageWeight: {
+                                UnitOfMeasurement: { Code: "KGS" },
+                                Weight: String(pkg.weight)
                             }
-                        ]
+                        }))
                     }
                 }
             })
@@ -134,6 +134,7 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
 }
 async function createShipmentOrder(orderDetails) {
     const token = await getAccessToken();
+    const packagesArray = orderDetails.packages && orderDetails.packages.length > 0 ? orderDetails.packages : [{ weight: orderDetails.weight || 0.5 }];
     if (!token) {
         checkMockAllowed("UPS");
         const randomAWB = "1Z" + Math.floor(100000000000000 + Math.random() * 900000000000000);
@@ -185,15 +186,13 @@ async function createShipmentOrder(orderDetails) {
                             }
                         },
                         Service: { Code: orderDetails.courierName && orderDetails.courierName.includes("Saver") ? "13" : "11" },
-                        Package: [
-                            {
-                                Packaging: { Code: "02" },
-                                PackageWeight: {
-                                    UnitOfMeasurement: { Code: "KGS" },
-                                    Weight: String(orderDetails.weight || 0.5)
-                                }
+                        Package: packagesArray.map(pkg => ({
+                            Packaging: { Code: "02" },
+                            PackageWeight: {
+                                UnitOfMeasurement: { Code: "KGS" },
+                                Weight: String(pkg.weight)
                             }
-                        ]
+                        }))
                     }
                 }
             })
@@ -422,6 +421,26 @@ async function getLabel(awbNumber) {
         console.error("UPS label recovery error, falling back to mock:", e.message);
         return mockPDF;
     }
+};
+
+async function checkPickupAvailability({ pickupPincode, pickupDate }) {
+    const cleanCode = pickupPincode?.trim().replace(/\s+/g, "");
+    const isValid = /^[A-Z]\d[A-Z]\d[A-Z]\d$/i.test(cleanCode);
+    if (!isValid) {
+        return {
+            available: false,
+            pickupFee: 0,
+            currency: "CAD",
+            availableTimeSlots: [],
+            message: "Pickup not available for this pincode/postal code"
+        };
+    }
+    return {
+        available: true,
+        pickupFee: 8.00,
+        currency: "CAD",
+        availableTimeSlots: ["09:00 - 12:00", "13:00 - 17:00"]
+    };
 }
 module.exports = {
     fetchRates,
@@ -429,5 +448,6 @@ module.exports = {
     trackShipment,
     cancelShipmentOrder,
     createReturnShipmentOrder,
-    getLabel     
+    getLabel ,
+    checkPickupAvailability
 }; 

@@ -26,7 +26,17 @@ const createOrderSchema = Joi.object({
 
     weight: Joi.number().min(0).default(0.5),
 
-    courierName: Joi.string().allow("", null)
+    courierName: Joi.string().allow("", null),
+
+    packages: Joi.array().items(
+        Joi.object({
+            weight: Joi.number().min(0).required(),
+            length: Joi.number().min(0).optional(),
+            width: Joi.number().min(0).optional(),
+            height: Joi.number().min(0).optional()
+        })
+    ).optional(),
+    
 });
 const updateOrderSchema = Joi.object({
     orderStatus: Joi.string().valid("pending", "processing", "shipped", "delivered", "cancelled", "returned"),
@@ -34,7 +44,16 @@ const updateOrderSchema = Joi.object({
     deliveryPincode: Joi.string(),
     customerName: Joi.string(),
     customerPhone: Joi.string(),
-    weight: Joi.number().min(0)
+    weight: Joi.number().min(0),
+    packages: Joi.array().items(
+        Joi.object({
+            weight: Joi.number().min(0).required(),
+            length: Joi.number().min(0).optional(),
+            width: Joi.number().min(0).optional(),
+            height: Joi.number().min(0).optional()
+        })
+    ).optional(),
+  
 });
 
 

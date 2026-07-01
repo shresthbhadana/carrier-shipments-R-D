@@ -8,6 +8,7 @@ const fedexService = require("./fedexService");
 const canadaPostService = require("./canadaPostService");
 const shipmozoService = require("./shipmozoService");
 const purolatorService = require("./purolatorService");
+const upsService = require("./upsService");
 const createShipment = async (payload) => {
     if (!payload.orderId) {
         throw new Error("Order Id is required");
@@ -126,6 +127,12 @@ const getRates = async (payload) => {
             deliveryPincode: payload.deliveryPincode,
             weight: payload.weight,
             cod: payload.cod
+        }),
+        upsService.fetchRates({
+            pickupPincode : payload.pickupPincode,
+            deliveryPincode: payload.deliveryPincode,
+            weight : payload.weight,
+            cod : payload.cod
         })
     ]);
 
@@ -133,7 +140,7 @@ const getRates = async (payload) => {
     const canadaPostRates = results[1].status === "fulfilled" ? results[1].value : [];
     const fedexRates = results[2].status === "fulfilled" ? results[2].value : [];
     const purolatorRates = results[3].status === "fulfilled" ? results[3].value : [];
-
+const upsRates = results[4].status === "fulfilled" ? results[4].value : [];
     if (results[0].status === "rejected") {
         console.error("Shipmozo fetch rates error:", results[0].reason.message);
     }
@@ -146,8 +153,11 @@ const getRates = async (payload) => {
     if (results[3].status === "rejected") {
         console.error("Purolator fetch rates error:", results[3].reason.message);
     }
+    if(results[4].status === "rejected"){
+        console.error("UPS fetch rates error:", results[4].reason.message);
+    }
 
-    return [...shipmozoRates, ...canadaPostRates, ...fedexRates, ...purolatorRates];
+    return [...shipmozoRates, ...canadaPostRates, ...fedexRates, ...purolatorRates,...upsRates];
 };
 
 const trackShipment = async (shipmentId) => {
@@ -314,7 +324,18 @@ const getLocations = async (options = {}) => {
     }
     return carrierService.getLocations(postalCode);
 };
-
+const checkPickupAvailability = async (options) => {
+    const { carrier, pickupPincode, pickupDate } = options;
+    if (!pickupPincode) {
+        throw new Error("pickup pincode is required");
+    }
+    const carrierService = getCarrierService(carrier);
+    
+    if (!carrierService.checkPickupAvailability || typeof carrierService.checkPickupAvailability !== "function") {
+        throw new Error(`Carrier ${carrier || "default"} does not support pickup availability check`);
+    }
+    return carrierService.checkPickupAvailability({ pickupPincode, pickupDate });
+};
 module.exports = {
     createShipment,
     getShipmentById,
@@ -327,5 +348,6 @@ module.exports = {
     initiateReturn,
     getLabel,
     schedulePickup,
-    getLocations
+    getLocations,
+    checkPickupAvailability
 };

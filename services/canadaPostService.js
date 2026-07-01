@@ -151,6 +151,10 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
 
 async function createShipmentOrder(orderDetails) {
     const headers = getAuthHeaders();
+    const totalWeight = orderDetails.packages && orderDetails.packages.length > 0
+        ? orderDetails.packages.reduce((acc, p) => acc + p.weight, 0)
+        : (orderDetails.weight || 0.5);
+
     if (!headers) {
         checkMockAllowed("Canada Post");
     }
@@ -200,7 +204,7 @@ async function createShipmentOrder(orderDetails) {
             </address-details>
         </destination>
         <parcel-characteristics>
-            <weight>${Number(orderDetails.weight || 0.5).toFixed(3)}</weight>
+            <weight>${Number(totalWeight).toFixed(3)}</weight>
         </parcel-characteristics>
     </delivery-spec>
 </non-contract-shipment>`;
@@ -334,6 +338,10 @@ async function cancelShipmentOrder(orderId, awbNumber) {
 
 async function createReturnShipmentOrder(orderDetails) {
     const headers = getAuthHeaders();
+    const totalWeight = orderDetails.packages && orderDetails.packages.length > 0
+        ? orderDetails.packages.reduce((acc, p) => acc + p.weight, 0)
+        : (orderDetails.weight || 0.5);
+
     if (!headers) {
         checkMockAllowed("Canada Post");
     }
@@ -376,7 +384,7 @@ async function createReturnShipmentOrder(orderDetails) {
         </address-details>
     </receiver>
     <parcel-characteristics>
-        <weight>${Number(orderDetails.weight || 0.5).toFixed(3)}</weight>
+        <weight>${Number(totalWeight).toFixed(3)}</weight>
     </parcel-characteristics>
 </authorized-return>`;
 
@@ -446,6 +454,25 @@ async function getLabel(awbNumber) {
         console.error("Canada Post getLabel error, falling back to mock:", error.message);
         return mockPDF;
     }
+};
+async function checkPickupAvailability({ pickupPincode, pickupDate }) {
+    const cleanCode = pickupPincode?.trim().replace(/\s+/g, "");
+    const isValid = /^[A-Z]\d[A-Z]\d[A-Z]\d$/i.test(cleanCode);
+    if (!isValid) {
+        return {
+            available: false,
+            pickupFee: 0,
+            currency: "CAD",
+            availableTimeSlots: [],
+            message: "Pickup not available for this pincode/postal code"
+        };
+    }
+    return {
+        available: true,
+        pickupFee: 3.00,
+        currency: "CAD",
+        availableTimeSlots: ["09:00 - 12:00", "13:00 - 17:00"]
+    };
 }
 
 module.exports = {

@@ -22,7 +22,15 @@ const ShipmentSchema = new mongoose.Schema(
             default: "created"
         },
         pickupConfirmationNumber: String,
-        labelUrl: String
+        labelUrl: String,
+        packages: [
+            {
+                weight: { type: Number, required: true },
+                length: Number,
+                width: Number,
+                height: Number
+            }
+        ]
     },
     {
         timestamps: true

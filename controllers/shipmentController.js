@@ -171,6 +171,17 @@ const getLocations = async (req, res, next) => {
         next(error);
     }
 };
+const checkPickupAvailability = async (req, res, next) => {
+    try {
+        const result = await shipmentService.checkPickupAvailability(req.query);
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
 
 module.exports = {
     createShipment,
@@ -184,5 +195,6 @@ module.exports = {
     initiateReturn,
     getLabel,
     schedulePickup,
-    getLocations
+    getLocations,
+    checkPickupAvailability
 };

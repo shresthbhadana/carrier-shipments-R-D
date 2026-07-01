@@ -47,18 +47,21 @@ const createProductOrder = async (payload) => {
             price: price
         };
     });
-
     const subtotal = resolvedProducts.reduce((acc, item) => {
         return acc + (item.price * item.quantity);
     }, 0);
 
-    const carrierService = getCarrierService(payload.courierName);
-    const rates = await carrierService.fetchRates({
-        pickupPincode: payload.pickupPincode,
-        deliveryPincode: payload.deliveryPincode,
-        weight: payload.weight || 0.5,
-        cod: false
-    });
+    const totalWeight = payload.packages && payload.packages.length > 0
+         ? payload.packages.reduce((acc, p) => acc + p.weight, 0)
+         : (payload.weight || 0.5);
+     const carrierService = getCarrierService(payload.courierName);
+     const rates =  await carrierService.fetchRates({
+         pickupPincode : payload.pickupPincode,
+         deliveryPincode : payload.deliveryPincode,
+         weight : totalWeight,
+         packages : payload.packages,
+         cod : false
+     });
 
     if (!rates || rates.length === 0) {
         throw new Error("No courier services available for the selected pin codes");
@@ -102,7 +105,8 @@ const createProductOrder = async (payload) => {
                 customerName: payload.customerName,
                 customerPhone: payload.customerPhone,
                 deliveryPincode: payload.deliveryPincode,
-                weight: payload.weight || 0.5,
+                weight: totalWeight,
+                packages : payload.packages,
                 courierName: courierName
             });
         } catch (bookingError) {
@@ -123,7 +127,8 @@ const createProductOrder = async (payload) => {
             trackingId: shipmentResult.trackingId,
             awbNumber: shipmentResult.awbNumber,
             shippingPrice: shippingPrice,
-            status: shipmentResult.status
+            status: shipmentResult.status,
+            packages : payload.packages
         }], { session });
         const shipment = shipments[0];
         

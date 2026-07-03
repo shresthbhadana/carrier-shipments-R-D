@@ -1,0 +1,281 @@
+{
+	"info": {
+		"_postman_id": "b3e3c0f6-9f4a-412d-9477-7e6be95112cd",
+		"name": "GLS Canada Smart4i API Tests",
+		"description": "Collection for testing GLS (Smart4i) integration endpoints including Rates, Booking, Labels, Tracking, Returns, and Cancellation.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/auth/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "GLS Shipping Lifecycle",
+			"item": [
+				{
+					"name": "Calculate Rates",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pickupPincode\": \"H9P2T7\",\n    \"deliveryPincode\": \"M5V2T6\",\n    \"weight\": 1.5,\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/rates",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"rates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Order (Book Shipment)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.shipmentId) {",
+									"    pm.collectionVariables.set(\"shipmentId\", jsonData.data.shipmentId);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"60c72b2f9b1d8e2568cf9571\",\n    \"products\": [\n        {\n            \"productId\": \"642bb0ea00f1aa96d6ab2091\",\n            \"quantity\": 1\n        }\n    ],\n    \"pickupPincode\": \"H9P2T7\",\n    \"deliveryPincode\": \"M5V2T6\",\n    \"customerName\": \"John Doe\",\n    \"customerPhone\": \"14165550199\",\n    \"weight\": 1.5,\n    \"courierName\": \"GLS Standard\",\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shipping Label",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/{{shipmentId}}/label",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"{{shipmentId}}",
+								"label"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Track Shipment",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/{{shipmentId}}/track",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"{{shipmentId}}",
+								"track"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Shipment Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/{{shipmentId}}/cancel",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"{{shipmentId}}",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Initiate Return Shipment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customerName\": \"John Doe\",\n    \"customerPhone\": \"14165550199\",\n    \"pickupAddress\": \"123 Consignee St\",\n    \"pickupCity\": \"Toronto\",\n    \"pickupState\": \"ON\",\n    \"pickupPincode\": \"M5V2T6\",\n    \"weight\": 1.5,\n    \"returnReasonId\": 14,\n    \"customerRequest\": \"REFUND\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/{{shipmentId}}/return",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"{{shipmentId}}",
+								"return"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "token",
+			"value": ""
+		},
+		{
+			"key": "shipmentId",
+			"value": ""
+		}
+	]
+}

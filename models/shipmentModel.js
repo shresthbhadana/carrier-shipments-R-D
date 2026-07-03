@@ -23,12 +23,13 @@ const ShipmentSchema = new mongoose.Schema(
         },
         pickupConfirmationNumber: String,
         labelUrl: String,
-        packages: [
+        packages :[
             {
-                weight: { type: Number, required: true },
-                length: Number,
-                width: Number,
-                height: Number
+                weight   :{ 
+                type: Number,
+                width : Number,
+                height : Number
+                }
             }
         ]
     },

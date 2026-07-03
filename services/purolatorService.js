@@ -58,6 +58,9 @@ async function getAccessToken() {
 }
 
 async function getAuthHeader() {
+    if (process.env.MOCK_CARRIERS === "true") {
+        return null;
+    }
     try {
         const token = await getAccessToken();
         if(!token){

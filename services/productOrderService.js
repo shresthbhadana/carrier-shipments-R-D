@@ -110,8 +110,9 @@ const createProductOrder = async (payload) => {
                 courierName: courierName
             });
         } catch (bookingError) {
-            
-            console.error(`Carrier Booking failed: ${bookingError.message}. Saving order in pending_booking status.`);
+            if (process.env.NODE_ENV !== "test") {
+                console.error(`Carrier Booking failed: ${bookingError.message}. Saving order in pending_booking status.`);
+            }
             isBookingFailed = true;
             shipmentResult = {
                 courierName: courierName,

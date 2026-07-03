@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "a9cfcf2c-4735-430f-b4ff-2e86b093a388",
 		"name": "YellowDodle Shipping API",
-		"description": "Postman Collection for YellowDodle Orders and Shipments APIs",
+		"description": "Postman Collection for YellowDodle Orders and Shipments APIs, organized by carrier for lifecycle testing.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -102,10 +102,48 @@
 			]
 		},
 		{
-			"name": "Orders",
+			"name": "UPS Testing",
 			"item": [
 				{
-					"name": "Create Product Order (Multi-package)",
+					"name": "1. Check UPS Pickup Availability",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/pickup/availability?carrier=ups&pickupPincode=K1A0B1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"pickup",
+								"availability"
+							],
+							"query": [
+								{
+									"key": "carrier",
+									"value": "ups"
+								},
+								{
+									"key": "pickupPincode",
+									"value": "K1A0B1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get UPS Shipping Rates",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -122,7 +160,43 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"642bb0ea00f1aa96d6ab2090\",\n    \"products\": [\n        {\n            \"productId\": \"642bb0ea00f1aa96d6ab2091\",\n            \"quantity\": 2\n        }\n    ],\n    \"pickupPincode\": \"K1A0B1\",\n    \"deliveryPincode\": \"K1A0B2\",\n    \"customerName\": \"Test Customer\",\n    \"customerPhone\": \"9876543210\",\n    \"courierName\": \"FedEx Ground\",\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        },\n        {\n            \"weight\": 2.0,\n            \"length\": 12,\n            \"width\": 12,\n            \"height\": 12\n        }\n    ]\n}"
+							"raw": "{\n    \"pickupPincode\": \"K1A0B1\",\n    \"deliveryPincode\": \"K1A0B2\",\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        },\n        {\n            \"weight\": 2.0,\n            \"length\": 12,\n            \"width\": 12,\n            \"height\": 12\n        }\n    ],\n    \"cod\": false\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/rates",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"rates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Create UPS Product Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"6a38ba5124841eac3628c97e\",\n    \"products\": [\n        {\n            \"productId\": \"642bb0ea00f1aa96d6ab2091\",\n            \"quantity\": 2\n        }\n    ],\n    \"pickupPincode\": \"K1A0B1\",\n    \"deliveryPincode\": \"K1A0B2\",\n    \"customerName\": \"UPS Live Customer\",\n    \"customerPhone\": \"9876543210\",\n    \"courierName\": \"UPS Ground\",\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        },\n        {\n            \"weight\": 2.0,\n            \"length\": 12,\n            \"width\": 12,\n            \"height\": 12\n        }\n    ]\n}"
 						},
 						"url": {
 							"raw": "http://localhost:3000/api/orders",
@@ -140,7 +214,91 @@
 					"response": []
 				},
 				{
-					"name": "Create Product Order",
+					"name": "4. Get UPS Shipment Label",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/label",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"label"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Track UPS Shipment",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/track",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"track"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Cancel UPS Shipment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/cancel",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. Initiate UPS Return",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -148,11 +306,206 @@
 								"key": "Content-Type",
 								"value": "application/json",
 								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"userId\": \"642bb0ea00f1aa96d6ab2090\",\n    \"products\": [\n        {\n            \"productId\": \"642bb0ea00f1aa96d6ab2091\",\n            \"quantity\": 2\n        }\n    ],\n    \"pickupPincode\": \"110001\",\n    \"deliveryPincode\": \"400001\",\n    \"customerName\": \"Test Customer\",\n    \"customerPhone\": \"9876543210\",\n    \"weight\": 1.0,\n    \"courierName\": \"FedEx Ground\"\n}"
+							"raw": "{\n    \"customerName\": \"UPS Returner\",\n    \"customerPhone\": \"9876543210\",\n    \"pickupAddress\": \"123 Main St\",\n    \"pickupPincode\": \"K1A0B1\",\n    \"pickupCity\": \"Ottawa\",\n    \"pickupState\": \"ON\",\n    \"weight\": 1.5,\n    \"returnReasonId\": 14,\n    \"customerRequest\": \"REFUND\",\n    \"reasonComment\": \"Returned size mismatch\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/return",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"return"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. Schedule UPS Pickup",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"date\": \"2026-07-03\",\n    \"anyTimeAfter\": \"09:00\",\n    \"untilTime\": \"17:00\",\n    \"weight\": 3.5,\n    \"pickupLocation\": \"Front Desk\",\n    \"additionalInstructions\": \"Ring the bell\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/pickup",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"pickup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "9. Get UPS Locations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/locations?carrier=ups&postalCode=K1A0B1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"locations"
+							],
+							"query": [
+								{
+									"key": "carrier",
+									"value": "ups"
+								},
+								{
+									"key": "postalCode",
+									"value": "K1A0B1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "FedEx Testing",
+			"item": [
+				{
+					"name": "1. Check FedEx Pickup Availability",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/pickup/availability?carrier=fedex&pickupPincode=K1A0B1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"pickup",
+								"availability"
+							],
+							"query": [
+								{
+									"key": "carrier",
+									"value": "fedex"
+								},
+								{
+									"key": "pickupPincode",
+									"value": "K1A0B1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get FedEx Shipping Rates",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pickupPincode\": \"K1A0B1\",\n    \"deliveryPincode\": \"K1A0B2\",\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        },\n        {\n            \"weight\": 2.0,\n            \"length\": 12,\n            \"width\": 12,\n            \"height\": 12\n        }\n    ],\n    \"cod\": false\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/rates",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"rates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Create FedEx Product Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"6a38ba5124841eac3628c97e\",\n    \"products\": [\n        {\n            \"productId\": \"642bb0ea00f1aa96d6ab2091\",\n            \"quantity\": 2\n        }\n    ],\n    \"pickupPincode\": \"K1A0B1\",\n    \"deliveryPincode\": \"K1A0B2\",\n    \"customerName\": \"FedEx Live Customer\",\n    \"customerPhone\": \"9876543210\",\n    \"courierName\": \"FedEx Ground\",\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        },\n        {\n            \"weight\": 2.0,\n            \"length\": 12,\n            \"width\": 12,\n            \"height\": 12\n        }\n    ]\n}"
 						},
 						"url": {
 							"raw": "http://localhost:3000/api/orders",
@@ -169,6 +522,671 @@
 					},
 					"response": []
 				},
+				{
+					"name": "4. Get FedEx Shipment Label",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/label",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"label"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Track FedEx Shipment",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/track",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"track"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Cancel FedEx Shipment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/cancel",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. Initiate FedEx Return",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customerName\": \"FedEx Returner\",\n    \"customerPhone\": \"9876543210\",\n    \"pickupAddress\": \"123 Main St\",\n    \"pickupPincode\": \"K1A0B1\",\n    \"pickupCity\": \"Ottawa\",\n    \"pickupState\": \"ON\",\n    \"weight\": 1.5,\n    \"returnReasonId\": 14,\n    \"customerRequest\": \"REFUND\",\n    \"reasonComment\": \"Returned size mismatch\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/return",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"return"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. Schedule FedEx Pickup",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"date\": \"2026-07-03\",\n    \"anyTimeAfter\": \"09:00\",\n    \"untilTime\": \"17:00\",\n    \"weight\": 3.5,\n    \"pickupLocation\": \"Front Desk\",\n    \"additionalInstructions\": \"Ring the bell\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/pickup",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"pickup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "9. Get FedEx Locations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/locations?carrier=fedex&postalCode=K1A0B1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"locations"
+							],
+							"query": [
+								{
+									"key": "carrier",
+									"value": "fedex"
+								},
+								{
+									"key": "postalCode",
+									"value": "K1A0B1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Canada Post Testing",
+			"item": [
+				{
+					"name": "1. Check Canada Post Pickup Availability",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/pickup/availability?carrier=canada%20post&pickupPincode=K1A0B1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"pickup",
+								"availability"
+							],
+							"query": [
+								{
+									"key": "carrier",
+									"value": "canada post"
+								},
+								{
+									"key": "pickupPincode",
+									"value": "K1A0B1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get Canada Post Shipping Rates",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pickupPincode\": \"K1A0B1\",\n    \"deliveryPincode\": \"K1A0B2\",\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        },\n        {\n            \"weight\": 2.0,\n            \"length\": 12,\n            \"width\": 12,\n            \"height\": 12\n        }\n    ],\n    \"cod\": false\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/rates",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"rates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Create Canada Post Product Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"6a38ba5124841eac3628c97e\",\n    \"products\": [\n        {\n            \"productId\": \"642bb0ea00f1aa96d6ab2091\",\n            \"quantity\": 2\n        }\n    ],\n    \"pickupPincode\": \"K1A0B1\",\n    \"deliveryPincode\": \"K1A0B2\",\n    \"customerName\": \"Canada Post Live Customer\",\n    \"customerPhone\": \"9876543210\",\n    \"courierName\": \"Canada Post Regular Parcel\",\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        },\n        {\n            \"weight\": 2.0,\n            \"length\": 12,\n            \"width\": 12,\n            \"height\": 12\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/orders",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get Canada Post Shipment Label",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/label",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"label"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Track Canada Post Shipment",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/track",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"track"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Cancel Canada Post Shipment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/cancel",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"cancel"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. Initiate Canada Post Return",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customerName\": \"Canada Post Returner\",\n    \"customerPhone\": \"9876543210\",\n    \"pickupAddress\": \"123 Main St\",\n    \"pickupPincode\": \"K1A0B1\",\n    \"pickupCity\": \"Ottawa\",\n    \"pickupState\": \"ON\",\n    \"weight\": 1.5,\n    \"returnReasonId\": 14,\n    \"customerRequest\": \"REFUND\",\n    \"reasonComment\": \"Returned size mismatch\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/return",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"return"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. Schedule Canada Post Pickup",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"date\": \"2026-07-03\",\n    \"anyTimeAfter\": \"09:00\",\n    \"untilTime\": \"17:00\",\n    \"weight\": 3.5,\n    \"pickupLocation\": \"Front Desk\",\n    \"additionalInstructions\": \"Ring the bell\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/pickup",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID",
+								"pickup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "9. Get Canada Post Locations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/locations?carrier=canada%20post&postalCode=K1A0B1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"locations"
+							],
+							"query": [
+								{
+									"key": "carrier",
+									"value": "canada post"
+								},
+								{
+									"key": "postalCode",
+									"value": "K1A0B1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "General Shipments & Operations",
+			"item": [
+				{
+					"name": "Create Shipment (Direct)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"orderId\": \"642bb0ea00f1aa96d6ab2091\",\n    \"courierName\": \"FedEx Ground\",\n    \"shippingPrice\": 15,\n    \"status\": \"created\",\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Shipments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shipment By ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Shipment",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"shipped\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Shipment",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"SHIPMENT_ID"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "General Orders",
+			"item": [
 				{
 					"name": "Get All Orders",
 					"request": {
@@ -280,285 +1298,6 @@
 								"api",
 								"orders",
 								"ORDER_ID"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Shipments",
-			"item": [
-				{
-					"name": "Check Pickup Availability",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "http://localhost:3000/api/shipments/pickup/availability?carrier=fedex&pickupPincode=K1A0B1",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3000",
-							"path": [
-								"api",
-								"shipments",
-								"pickup",
-								"availability"
-							],
-							"query": [
-								{
-									"key": "carrier",
-									"value": "fedex"
-								},
-								{
-									"key": "pickupPincode",
-									"value": "K1A0B1"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Shipping Rates (Multi-package)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"pickupPincode\": \"K1A0B1\",\n    \"deliveryPincode\": \"K1A0B2\",\n    \"packages\": [\n        {\n            \"weight\": 1.5,\n            \"length\": 10,\n            \"width\": 10,\n            \"height\": 10\n        },\n        {\n            \"weight\": 2.0,\n            \"length\": 12,\n            \"width\": 12,\n            \"height\": 12\n        }\n    ],\n    \"cod\": false\n}"
-						},
-						"url": {
-							"raw": "http://localhost:3000/api/shipments/rates",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3000",
-							"path": [
-								"api",
-								"shipments",
-								"rates"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Shipping Rates",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"pickupPincode\": \"110001\",\n    \"deliveryPincode\": \"400001\",\n    \"weight\": 1.0,\n    \"cod\": false\n}"
-						},
-						"url": {
-							"raw": "http://localhost:3000/api/shipments/rates",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3000",
-							"path": [
-								"api",
-								"shipments",
-								"rates"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Create Shipment",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"orderId\": \"642bb0ea00f1aa96d6ab2091\",\n    \"courierName\": \"FedEx Ground\",\n    \"shippingPrice\": 15,\n    \"status\": \"created\"\n}"
-						},
-						"url": {
-							"raw": "http://localhost:3000/api/shipments",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3000",
-							"path": [
-								"api",
-								"shipments"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Shipments",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:3000/api/shipments",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3000",
-							"path": [
-								"api",
-								"shipments"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Shipment By ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3000",
-							"path": [
-								"api",
-								"shipments",
-								"SHIPMENT_ID"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Track Shipment",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/track",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3000",
-							"path": [
-								"api",
-								"shipments",
-								"SHIPMENT_ID",
-								"track"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Cancel Shipment",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/cancel",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3000",
-							"path": [
-								"api",
-								"shipments",
-								"SHIPMENT_ID",
-								"cancel"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Initiate Shipment Return",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"customerName\": \"Test Customer\",\n    \"customerPhone\": \"9876543210\",\n    \"pickupAddress\": \"Sector 49, Gurgaon\",\n    \"pickupPincode\": \"122001\",\n    \"pickupCity\": \"Gurgaon\",\n    \"pickupState\": \"Haryana\",\n    \"weight\": 1.0,\n    \"returnReasonId\": 14,\n    \"customerRequest\": \"REFUND\",\n    \"reasonComment\": \"Returned because of size issue\"\n}"
-						},
-						"url": {
-							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/return",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3000",
-							"path": [
-								"api",
-								"shipments",
-								"SHIPMENT_ID",
-								"return"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Shipment Label",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:3000/api/shipments/SHIPMENT_ID/label",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "3000",
-							"path": [
-								"api",
-								"shipments",
-								"SHIPMENT_ID",
-								"label"
 							]
 						}
 					},

@@ -77,6 +77,7 @@ app.use(
     productOrderRoutes
 );
 app.use("/api/shipments", shipmentRoutes);
+app.use("/api/shipment", shipmentRoutes);
 app.use("/api/v1", subscriptionRoutes
 );
 app.use(errorHandler);

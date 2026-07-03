@@ -256,7 +256,9 @@ const verifySubscriptionSignature = async ({
 
         return subscription;
     } catch (error) {
-        console.error("Error in verifySubscriptionSignature:", error);
+        if (process.env.NODE_ENV !== "test") {
+            console.error("Error in verifySubscriptionSignature:", error);
+        }
         throw new Error(getErrorMessage(error) || "Signature verification failed");
     }
 };

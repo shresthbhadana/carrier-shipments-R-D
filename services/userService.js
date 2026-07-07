@@ -1,53 +1,86 @@
 const jwt = require("jsonwebtoken");
 const userRepository = require("../repository/userRepository");
+const crypto = require("crypto");
+const RefreshToken = require("../models/refreshToken");
 
-const generateToken = (userId)=>{
-    return jwt.sign({id:userId}, process.env.JWT_SECRET, {
-         expiresIn: process.env.JWT_EXPIRES_IN || "7d"
+
+const generateToken = async (userId) => {
+    const accessToken = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+        algorithm: "HS256",
+        expiresIn: "15m"
     });
-}
+    const refreshTokenString = crypto.randomBytes(40).toString("hex");
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); 
 
-const registerUser = async(payload)=>{
-    const {name,email,password} = payload;
-      if (!name || !email || !password) {
+    await RefreshToken.create({
+        userId: userId,
+        token: refreshTokenString,
+        expiresAt: expiresAt
+    });
+    return { accessToken, refreshToken: refreshTokenString };
+};
+
+const registerUser = async (payload) => {
+    const { name, email, password } = payload;
+    if (!name || !email || !password) {
         throw new Error("Name, email, and password are required");
     }
     const existingUser = await userRepository.findByEmail(email);
     if (existingUser) {
         throw new Error("User with this email already exists");
     }
-       const user = await userRepository.createUser({ name, email, password });
-    const token = generateToken(user._id);
+    const user = await userRepository.createUser({ name, email, password });
+    const tokens = await generateToken(user._id);
     return {
         user: {
             id: user._id,
             name: user.name,
             email: user.email
         },
-        token
+        ...tokens
     };
-  
-}
-const loginUser = async(payload)=>{
-     const {email,password} = payload;
+};
+const refreshAuthToken = async (tokenString) => {
+    const refreshTokenDoc = await RefreshToken.findOne({ token: tokenString });
+    if (!refreshTokenDoc) {
+        throw new Error("invalid REFRESH token");
+    }
+    if (refreshTokenDoc.isUsed || refreshTokenDoc.isRevoked) {
+        await RefreshToken.updateMany({ userId: refreshTokenDoc.userId }, { isRevoked: true });
+        throw new Error("security alert : refreshed token reuse detected.force logging out all sessions");
+    }
+    if (new Date() > refreshTokenDoc.expiresAt) {
+        throw new Error("Expired refresh token");
+    }
+
+    // Mark old token as used
+    refreshTokenDoc.isUsed = true;
+    await refreshTokenDoc.save();
+
+    return await generateToken(refreshTokenDoc.userId);
+};
+
+const loginUser = async (payload) => {
+    const { email, password } = payload;
 
     //validation
-    if(!email || !password) {
+    if (!email || !password) {
         throw new Error("Please provide email and password");
     }
 
     const user = await userRepository.findByEmail(email);
-    if(!user) {
+    if (!user) {
         throw new Error("Invalid credentials");
     }
 
     const isMatch = await user.matchPassword(password);
 
-    if(!isMatch) {
+    if (!isMatch) {
         throw new Error("Invalid credentials");
     }
 
-    const token = generateToken(user._id);
+    const tokens = await generateToken(user._id);
 
     return {
         user: {
@@ -55,10 +88,9 @@ const loginUser = async(payload)=>{
             name: user.name,
             email: user.email
         },
-        token
+        ...tokens
     };
-
-}
+};
 
 const getUserById = async (userId) => {
     const user = await userRepository.findById(userId);
@@ -75,5 +107,6 @@ const getUserById = async (userId) => {
 module.exports = {
     registerUser,
     loginUser,
-    getUserById
+    getUserById,
+    refreshAuthToken,
 };

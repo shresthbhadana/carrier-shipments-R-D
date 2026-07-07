@@ -28,11 +28,18 @@ const validateParams = (schema) => (req, res, next) => {
     next();
 };
 
-const {authenticateJWT} = require("../middlewares/authMiddleware");
+const { authenticateJWT } = require("../middlewares/authMiddleware");
+const { validateApiKey } = require("../middlewares/apiKeyMiddleware");
+const { verifyShipmentOwnership } = require("../middlewares/ownershipMiddleware");
 
-const {verifyShipmentOwnership} = require("../middlewares/ownershipMiddleware");
+const authenticateJWTOrApiKey = async (req, res, next) => {
+    if (req.headers["x-api-key"]) {
+        return validateApiKey(req, res, next);
+    }
+    return authenticateJWT(req, res, next);
+};
 
-router.use(authenticateJWT)
+router.use(authenticateJWTOrApiKey);
 
 
 

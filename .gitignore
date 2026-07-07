@@ -1,4 +1,7 @@
 .env
 node_modules/
+logs/
+uploads/
 labels/
-.env.example
+package-lock.json
+generateApikey.js

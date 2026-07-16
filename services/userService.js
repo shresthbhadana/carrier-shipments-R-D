@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const userRepository = require("../repository/userRepository");
 const crypto = require("crypto");
 const RefreshToken = require("../models/refreshToken");
+const { getRedisKey, setRedisKey } = require("../config/redis");
 
 
 const generateToken = async (userId) => {
@@ -42,6 +43,10 @@ const registerUser = async (payload) => {
     };
 };
 const refreshAuthToken = async (tokenString) => {
+    const isBlacklisted = await getRedisKey(`blacklist:token:${tokenString}`);
+    if (isBlacklisted) {
+        throw new Error("Token is blacklisted");
+    }
     const refreshTokenDoc = await RefreshToken.findOne({ token: tokenString });
     if (!refreshTokenDoc) {
         throw new Error("invalid REFRESH token");
@@ -54,7 +59,7 @@ const refreshAuthToken = async (tokenString) => {
         throw new Error("Expired refresh token");
     }
 
-    // Mark old token as used
+
     refreshTokenDoc.isUsed = true;
     await refreshTokenDoc.save();
 
@@ -64,7 +69,7 @@ const refreshAuthToken = async (tokenString) => {
 const loginUser = async (payload) => {
     const { email, password } = payload;
 
-    //validation
+   
     if (!email || !password) {
         throw new Error("Please provide email and password");
     }

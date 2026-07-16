@@ -6,7 +6,7 @@ const createPlan = async(req,res,next)=>{
 
         return res.status(201).json({
             success : true,
-            message : "Plan created successfully",
+            message : ["Plan created successfully"],
             data : plan
         }) 
     }
@@ -30,7 +30,7 @@ const createSubscriptions = async(req,res,next)=>{
 
         return res.status(201).json({
             success : true,
-            message : "Subscription created successfully",
+            message : ["Subscription created successfully"],
             data : subscription
         })
     }
@@ -45,7 +45,7 @@ const fetchSubscriptions = async(req,res,next)=>{
         const subscription = await subscriptionService.fetchSubscription(subscriptionId)
         return res.status(200).json({
             success : true,
-            message : "Subscription fetched successfully",
+            message : ["Subscription fetched successfully"],
             data : subscription
         })
     }
@@ -60,7 +60,7 @@ const cancelSubscription = async(req,res,next)=>{
         const subscription = await subscriptionService.cancelSubscription(subscriptionId)
         return res.status(200).json({
             success : true,
-            message : "Subscription cancelled successfully",
+            message : ["Subscription cancelled successfully"],
             data : subscription
         })
     }
@@ -85,7 +85,7 @@ const getUserSubscription = async(req,res,next)=>{
         const subscription = await subscriptionService.getUserSubscriptions({ userId, limit, skip })
         return res.status(200).json({
             success : true,
-            message : "User Subscription fetched successfully",
+            message : ["User Subscription fetched successfully"],
             data : subscription
         })
     }
@@ -100,7 +100,7 @@ const updateSubscriptionStatus = async(req,res,next)=>{
         const subscription = await subscriptionService.updateSubscriptionStatus(subscriptionId,status)
         return res.status(200).json({
             success : true,
-            message : "Subscription Status updated successfully",
+            message : ["Subscription Status updated successfully"],
             data : subscription
         })
     }
@@ -115,7 +115,7 @@ const getSubscriptionByRazorpayId = async(req,res,next)=>{
         const subscription = await subscriptionService.getSubscriptionByRazorpayId(subscriptionId)
         return res.status(200).json({
             success : true,
-            message : "Subscription fetched successfully",
+            message : ["Subscription fetched successfully"],
             data : subscription
         })
     }
@@ -134,7 +134,7 @@ const verifySubscription = async(req,res,next)=>{
         });
         return res.status(200).json({
             success : true,
-            message : "Payment signature verified successfully",
+            message : ["Payment signature verified successfully"],
             data : result
         });
     }
@@ -149,7 +149,7 @@ const handleWebhook = async(req,res,next)=>{
         const result = await subscriptionService.processWebhook(req.body, signature, req.rawBody);
         return res.status(200).json({
             success : true,
-            message : "Webhook processed successfully",
+            message : ["Webhook processed successfully"],
             data : result
         });
     }

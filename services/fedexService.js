@@ -56,7 +56,19 @@ async function getAccessToken() {
 }
 
 
-async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = false, packages }) {
+async function fetchRates({ 
+    pickupPincode, 
+    deliveryPincode, 
+    weight = 0.5, 
+    cod = false, 
+    packages,
+    pickupAddress,
+    pickupCity,
+    pickupState,
+    deliveryAddress,
+    deliveryCity,
+    deliveryState
+}) {
     const token = await getAccessToken();
     const packagesArray = packages && packages.length > 0 ? packages : [{ weight: weight || 0.5 }];
     const totalWeight = packagesArray.reduce((acc, p) => acc + p.weight, 0);
@@ -66,7 +78,7 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
         const p1 = parseInt(pickupPincode?.replace(/\D/g, "") || "0");
         const p2 = parseInt(deliveryPincode?.replace(/\D/g, "") || "0");
         const distanceFactor = (!isNaN(p1) && !isNaN(p2)) ? (Math.abs(p1 - p2) % 100) : 10;
-        const basePrice = 80 + (totalWeight * 35) + (distanceFactor * 0.9); // FedEx typically higher rates
+        const basePrice = 80 + (totalWeight * 35) + (distanceFactor * 0.9);
         return [
             {
                 courierId: "FEDEX_GROUND",
@@ -86,7 +98,6 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
     }
 
     try {
-   
         const response = await fetch(`${FEDEX_API_URL}/rate/v1/rates/quotes`, {
             method: "POST",
             headers: {
@@ -96,8 +107,24 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
             body: JSON.stringify({
                 accountNumber: { value: FEDEX_ACCOUNT_NUMBER },
                 requestedShipment: {
-                    shipper: { address: { postalCode: pickupPincode, countryCode: "CA" } },
-                    recipient: { address: { postalCode: deliveryPincode, countryCode: "CA" } },
+                    shipper: { 
+                        address: { 
+                            postalCode: pickupPincode, 
+                            countryCode: "CA",
+                            ...(pickupCity && { city: pickupCity }),
+                            ...(pickupState && { stateOrProvinceCode: pickupState }),
+                            ...(pickupAddress && { streetLines: [pickupAddress] })
+                        } 
+                    },
+                    recipient: { 
+                        address: { 
+                            postalCode: deliveryPincode, 
+                            countryCode: "CA",
+                            ...(deliveryCity && { city: deliveryCity }),
+                            ...(deliveryState && { stateOrProvinceCode: deliveryState }),
+                            ...(deliveryAddress && { streetLines: [deliveryAddress] })
+                        } 
+                    },
                     pickupType: "CONTACT_FEDEX_TO_SCHEDULE",
                     rateRequestType: ["LIST"],
                     requestedPackageLineItems: packagesArray.map(pkg => ({

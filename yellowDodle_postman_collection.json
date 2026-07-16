@@ -55,7 +55,39 @@
 					"response": []
 				},
 				{
-					"name": "Login",
+					"name": "Login - Step 1 OTP Trigger",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/auth/login/step1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"auth",
+								"login",
+								"step1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login - Step 2 OTP Verify",
 					"event": [
 						{
 							"listen": "test",
@@ -81,10 +113,10 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\",\n    \"otp\": \"123456\"\n}"
 						},
 						"url": {
-							"raw": "http://localhost:3000/api/auth/login",
+							"raw": "http://localhost:3000/api/auth/login/verify",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -93,7 +125,39 @@
 							"path": [
 								"api",
 								"auth",
-								"login"
+								"login",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout & Blacklist Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"your_refresh_token_here\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/auth/logout",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"auth",
+								"logout"
 							]
 						}
 					},
@@ -1181,6 +1245,80 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Initiate Shipment Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"orderId\": \"60c72b2f9b1d8e2568cf9571\",\n    \"courierName\": \"Canada Post Regular Parcel\",\n    \"customerName\": \"John Doe\",\n    \"customerPhone\": \"9876543210\",\n    \"pickupPincode\": \"K1A0B1\",\n    \"deliveryPincode\": \"K1A0B2\",\n    \"weight\": 1.5,\n    \"pickupAddress\": \"123 Shipper St\",\n    \"pickupCity\": \"Montreal\",\n    \"pickupState\": \"QC\",\n    \"deliveryAddress\": \"456 Recipient St\",\n    \"deliveryCity\": \"Toronto\",\n    \"deliveryState\": \"ON\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/payments/initiate",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"payments",
+								"initiate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Shipment Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"razorpay_order_id\": \"order_mock123\",\n    \"razorpay_payment_id\": \"pay_mock123\",\n    \"razorpay_signature\": \"your_signature_here\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/shipments/payments/verify",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"shipments",
+								"payments",
+								"verify"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -1581,6 +1719,74 @@
 								"api",
 								"v1",
 								"webhook"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin Settings",
+			"item": [
+				{
+					"name": "Get All Settings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3000/api/admin/settings",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"admin",
+								"settings"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Admin Setting",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"key\": \"platform_fee\",\n    \"value\": 15\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/admin/settings",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"admin",
+								"settings"
 							]
 						}
 					},

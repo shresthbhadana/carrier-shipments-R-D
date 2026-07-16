@@ -9,6 +9,8 @@ const compression = require("compression");
 const morgan = require("morgan");
 const { logger, httpLogger } = require("./config/logger");
 const xss = require("xss");
+const { startBookingScheduler } = require("./utils/bookigScheduler");
+
 
 
 if (!process.env.JWT_SECRET) {
@@ -152,6 +154,8 @@ const shipmentRoutes = require("./routes/shipmentRoute");
 const authRoutes = require("./routes/authRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const uploadRoute = require("./routes/uploadRoute");
+const settingRoutes = require("./routes/settingRoutes");
+const { initRedis } = require("./config/redis");
 
 
 
@@ -236,11 +240,14 @@ app.use("/api/shipments", shipmentRoutes);
 app.use("/api/v1", subscriptionRoutes
 );
 app.use("/api/upload", uploadRoute);
+app.use("/api/admin/settings", settingRoutes);
 
 app.use(errorHandler);
 const startServer = async () => {
     try {
         await connectDB();
+        startBookingScheduler();
+        await initRedis();
 
         const server = app.listen(PORT, () => {
             logger.info(`server is running at ${PORT}`);
@@ -263,3 +270,5 @@ if (require.main === module) {
 }
 
 module.exports = app;
+
+

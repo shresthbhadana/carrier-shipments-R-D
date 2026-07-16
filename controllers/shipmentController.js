@@ -2,13 +2,10 @@ const shipmentService = require("../services/shipmentService");
 
 const createShipment = async (req, res, next) => {
     try {
-        const shipment =
-            await shipmentService.createShipment(
-                req.body
-            );
-
+        const shipment = await shipmentService.createShipment(req.body);
         res.status(201).json({
             success: true,
+            message: ["Shipment created successfully"],
             data: shipment
         });
     } catch (error) {
@@ -18,13 +15,10 @@ const createShipment = async (req, res, next) => {
 
 const getShipmentById = async (req, res, next) => {
     try {
-        const shipment =
-            await shipmentService.getShipmentById(
-                req.params.id
-            );
-
+        const shipment = await shipmentService.getShipmentById(req.params.id);
         res.status(200).json({
             success: true,
+            message: ["Shipment fetched successfully"],
             data: shipment
         });
     } catch (error) {
@@ -42,9 +36,9 @@ const getAllShipments = async (req, res, next) => {
             sort,
             userId
         });
-
         res.status(200).json({
             success: true,
+            message: ["Shipments fetched successfully"],
             data: result.data,
             pagination: result.pagination
         });
@@ -55,14 +49,10 @@ const getAllShipments = async (req, res, next) => {
 
 const updateShipment = async (req, res, next) => {
     try {
-        const shipment =
-            await shipmentService.updateShipment(
-                req.params.id,
-                req.body
-            );
-
+        const shipment = await shipmentService.updateShipment(req.params.id, req.body);
         res.status(200).json({
             success: true,
+            message: ["Shipment updated successfully"],
             data: shipment
         });
     } catch (error) {
@@ -72,13 +62,10 @@ const updateShipment = async (req, res, next) => {
 
 const deleteShipment = async (req, res, next) => {
     try {
-        await shipmentService.deleteShipment(
-            req.params.id
-        );
-
+        await shipmentService.deleteShipment(req.params.id);
         res.status(200).json({
             success: true,
-            message: "Shipment deleted successfully"
+            message: ["Shipment deleted successfully"]
         });
     } catch (error) {
         next(error);
@@ -90,6 +77,7 @@ const getRates = async (req, res, next) => {
         const rates = await shipmentService.getRates(req.body);
         res.status(200).json({
             success: true,
+            message: ["Rates fetched successfully"],
             data: rates
         });
     } catch (error) {
@@ -102,6 +90,7 @@ const trackShipment = async (req, res, next) => {
         const trackingInfo = await shipmentService.trackShipment(req.params.id);
         res.status(200).json({
             success: true,
+            message: ["Tracking info fetched successfully"],
             data: trackingInfo.data
         });
     } catch (error) {
@@ -112,9 +101,10 @@ const trackShipment = async (req, res, next) => {
 const cancelShipment = async (req, res, next) => {
     try {
         const result = await shipmentService.cancelShipment(req.params.id);
+        const msg = result && result.message ? result.message : "Shipment cancelled successfully";
         res.status(200).json({
             success: true,
-            message: result.message
+            message: Array.isArray(msg) ? msg : [msg]
         });
     } catch (error) {
         next(error);
@@ -126,6 +116,7 @@ const initiateReturn = async (req, res, next) => {
         const returnShipment = await shipmentService.initiateReturn(req.params.id, req.body);
         res.status(200).json({
             success: true,
+            message: ["Return initiated successfully"],
             data: returnShipment
         });
     } catch (error) {
@@ -138,6 +129,7 @@ const getLabel = async (req, res, next) => {
         const labelUrl = await shipmentService.getLabel(req.params.id);
         res.status(200).json({
             success: true,
+            message: ["Label fetched successfully"],
             data: { labelUrl }
         });
     } catch (error) {
@@ -150,6 +142,7 @@ const schedulePickup = async (req, res, next) => {
         const result = await shipmentService.schedulePickup(req.params.id, req.body);
         res.status(200).json({
             success: true,
+            message: ["Pickup scheduled successfully"],
             data: result
         });
     } catch (error) {
@@ -165,17 +158,46 @@ const getLocations = async (req, res, next) => {
         });
         res.status(200).json({
             success: true,
+            message: ["Locations fetched successfully"],
             data: locations
         });
     } catch (error) {
         next(error);
     }
 };
+
 const checkPickupAvailability = async (req, res, next) => {
     try {
         const result = await shipmentService.checkPickupAvailability(req.query);
         res.status(200).json({
             success: true,
+            message: ["Pickup availability checked successfully"],
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const initiateShipmentPayment = async (req, res, next) => {
+    try {
+        const result = await shipmentService.initiateShipmentPayment(req.body);
+        res.status(200).json({
+            success: true,
+            message: ["Payment initiated successfully"],
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const verifyShipmentPayment = async (req, res, next) => {
+    try {
+        const result = await shipmentService.verifyShipmentPayment(req.body);
+        res.status(200).json({
+            success: true,
+            message: ["Payment verified and shipment booked successfully"],
             data: result
         });
     } catch (error) {
@@ -190,6 +212,8 @@ module.exports = {
     updateShipment,
     deleteShipment,
     getRates,
+    initiateShipmentPayment,
+    verifyShipmentPayment,
     trackShipment,
     cancelShipment,
     initiateReturn,

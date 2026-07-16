@@ -15,7 +15,9 @@ const {
     initiateReturnSchema,
     schedulePickupSchema,
     getLocationsSchema,
-    pickupAvailabilitySchema
+    pickupAvailabilitySchema,
+    initiatePaymentSchema,
+    verifyPaymentSchema
 } = require("../validators/shipmentValidator");
 const validateParams = (schema) => (req, res, next) => {
     const { error } = schema.validate(req.params);
@@ -55,6 +57,18 @@ router.post(
     "/rates",
     validate(rateQuerySchema),
     shipmentController.getRates
+);
+
+router.post(
+    "/payments/initiate",
+    validate(initiatePaymentSchema),
+    shipmentController.initiateShipmentPayment
+);
+
+router.post(
+    "/payments/verify",
+    validate(verifyPaymentSchema),
+    shipmentController.verifyShipmentPayment
 );
 
 router.get(

@@ -23,6 +23,23 @@ const ShipmentSchema = new mongoose.Schema(
         },
         pickupConfirmationNumber: String,
         labelUrl: String,
+        baseShippingPrice: Number,
+        platformFee: Number,
+        gstAmount: Number,
+            razorpayOrderId: String,
+        razorpayPaymentId: String,
+        razorpaySignature: String,
+        paymentStatus: {
+            type: String,
+            enum: ["pending", "paid", "failed"],
+            default: "pending",
+            index:true,
+        },
+        customerName: String,
+        customerPhone: String,
+        pickupPincode: String,
+        deliveryPincode: String,
+        weight: Number,
         packages :[
             {
                 weight   :{ 

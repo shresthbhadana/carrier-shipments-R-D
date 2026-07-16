@@ -24,10 +24,8 @@
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
     "cors": "2.8.5",
-    "crypto": "^1.0.1",
     "dotenv": "17.4.2",
     "express": "5.2.1",
-    "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "7.5.0",
     "helmet": "8.0.0",
     "hpp": "^0.2.3",
@@ -39,7 +37,8 @@
     "razorpay": "^2.9.6",
     "undici": "^7.28.0",
     "winston": "^3.19.0",
-    "xss": "^1.0.15"
+    "xss": "^1.0.15",
+    "redis": "^4.7.0"
   },
   "engines": {
     "node": "22.14.0",

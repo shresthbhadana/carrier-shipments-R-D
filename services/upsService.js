@@ -42,7 +42,19 @@ async function getAccessToken() {
         return null;
     }
 }
-async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = false, packages }) {
+async function fetchRates({ 
+    pickupPincode, 
+    deliveryPincode, 
+    weight = 0.5, 
+    cod = false, 
+    packages,
+    pickupAddress,
+    pickupCity,
+    pickupState,
+    deliveryAddress,
+    deliveryCity,
+    deliveryState
+}) {
     const token = await getAccessToken();
     const packagesArray = packages && packages.length > 0 ? packages : [{ weight: weight || 0.5 }];
     const totalWeight = packagesArray.reduce((acc, p) => acc + p.weight, 0);
@@ -89,13 +101,31 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
                     Shipment: {
                         Shipper: {
                             ShipperNumber: UPS_ACCOUNT_NUMBER,
-                            Address: { PostalCode: pickupPincode, CountryCode: "CA" }
+                            Address: { 
+                                PostalCode: pickupPincode, 
+                                CountryCode: "CA",
+                                ...(pickupCity && { City: pickupCity }),
+                                ...(pickupState && { StateProvinceCode: pickupState }),
+                                ...(pickupAddress && { AddressLine: [pickupAddress] })
+                            }
                         },
                         ShipTo: {
-                            Address: { PostalCode: deliveryPincode, CountryCode: "CA" }
+                            Address: { 
+                                PostalCode: deliveryPincode, 
+                                CountryCode: "CA",
+                                ...(deliveryCity && { City: deliveryCity }),
+                                ...(deliveryState && { StateProvinceCode: deliveryState }),
+                                ...(deliveryAddress && { AddressLine: [deliveryAddress] })
+                            }
                         },
                         ShipFrom: {
-                            Address: { PostalCode: pickupPincode, CountryCode: "CA" }
+                            Address: { 
+                                PostalCode: pickupPincode, 
+                                CountryCode: "CA",
+                                ...(pickupCity && { City: pickupCity }),
+                                ...(pickupState && { StateProvinceCode: pickupState }),
+                                ...(pickupAddress && { AddressLine: [pickupAddress] })
+                            }
                         },
                         Package: packagesArray.map(pkg => ({
                             PackagingType: { Code: "02" },

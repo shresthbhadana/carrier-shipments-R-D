@@ -3,13 +3,10 @@ const productOrderService = require("../services/productOrderService");
 const createProductOrder = async (req, res, next) => {
     try {
         req.body.userId = req.user.id;
-        const order =
-            await productOrderService.createProductOrder(
-                req.body
-            );
-
+        const order = await productOrderService.createProductOrder(req.body);
         res.status(201).json({
             success: true,
+            message: ["Order created successfully"],
             data: order
         });
     } catch (error) {
@@ -19,13 +16,10 @@ const createProductOrder = async (req, res, next) => {
 
 const getOrderById = async (req, res, next) => {
     try {
-        const order =
-            await productOrderService.getOrderById(
-                req.params.id
-            );
-
+        const order = await productOrderService.getOrderById(req.params.id);
         res.status(200).json({
             success: true,
+            message: ["Order fetched successfully"],
             data: order
         });
     } catch (error) {
@@ -43,9 +37,9 @@ const getAllOrders = async (req, res, next) => {
             sort,
             userId
         });
-
         res.status(200).json({
             success: true,
+            message: ["Orders fetched successfully"],
             data: result.data,
             pagination: result.pagination
         });
@@ -56,14 +50,10 @@ const getAllOrders = async (req, res, next) => {
 
 const updateOrder = async (req, res, next) => {
     try {
-        const order =
-            await productOrderService.updateOrder(
-                req.params.id,
-                req.body
-            );
-
+        const order = await productOrderService.updateOrder(req.params.id, req.body);
         res.status(200).json({
             success: true,
+            message: ["Order updated successfully"],
             data: order
         });
     } catch (error) {
@@ -73,13 +63,10 @@ const updateOrder = async (req, res, next) => {
 
 const deleteProductOrder = async (req, res, next) => {
     try {
-        await productOrderService.deleteProductOrder(
-            req.params.id
-        );
-
+        await productOrderService.deleteProductOrder(req.params.id);
         res.status(200).json({
             success: true,
-            message: "Order deleted successfully"
+            message: ["Order deleted successfully"]
         });
     } catch (error) {
         next(error);

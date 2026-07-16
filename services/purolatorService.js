@@ -77,7 +77,19 @@ async function getAuthHeader() {
 }
 
 
-async function fetchRates({ pickupPincode, deliveryPincode, weight = 1.0, cod = false, packages }) {
+async function fetchRates({ 
+    pickupPincode, 
+    deliveryPincode, 
+    weight = 1.0, 
+    cod = false, 
+    packages,
+    pickupAddress,
+    pickupCity,
+    pickupState,
+    deliveryAddress,
+    deliveryCity,
+    deliveryState
+}) {
     const authHeaders = await getAuthHeader();
     const packagesArray = packages && packages.length > 0 ? packages : [{ weight: weight || 1.0 }];
     const totalWeight = packagesArray.reduce((acc, p) => acc + p.weight, 0);
@@ -125,17 +137,17 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 1.0, cod = 
                     },
                     senderInformation: {
                         companyName: 'SHIPPER',
-                        streetAddress: ['SUITE 101'],
-                        city: 'MISSISSAUGA',
-                        provinceStateCode: 'ON',
+                        streetAddress: [pickupAddress || 'SUITE 101'],
+                        city: pickupCity || 'MISSISSAUGA',
+                        provinceStateCode: pickupState || 'ON',
                         country: 'CA',
                         postalZipCode: pickupPincode || 'A7A 4Y7'
                     },
                     receiverInformation: {
                         companyName: 'SHIPPER',
-                        streetAddress: ['SUITE 101'],
-                        city: 'MISSISSAUGA',
-                        provinceStateCode: 'ON',
+                        streetAddress: [deliveryAddress || 'SUITE 101'],
+                        city: deliveryCity || 'MISSISSAUGA',
+                        provinceStateCode: deliveryState || 'ON',
                         country: 'CA',
                         postalZipCode: deliveryPincode || 'A7A 4Y7'
                     },

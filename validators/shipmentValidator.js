@@ -63,12 +63,17 @@ const updateShipmentSchema = Joi.object({
         .min(1)
         .optional(),
 });
-
 const rateQuerySchema = Joi.object({
     pickupPincode: Joi.string().required(),
     deliveryPincode: Joi.string().required(),
     weight: Joi.number().min(0).default(0.5),
     cod: Joi.boolean().default(false),
+    pickupAddress: Joi.string().optional(),
+    pickupCity: Joi.string().optional(),
+    pickupState: Joi.string().optional(),
+    deliveryAddress: Joi.string().optional(),
+    deliveryCity: Joi.string().optional(),
+    deliveryState: Joi.string().optional(),
     packages: Joi.array()
         .items(
             Joi.object({
@@ -125,6 +130,32 @@ const pickupAvailabilitySchema = Joi.object({
     pickupPincode: Joi.string().required(),
     pickupDate: Joi.string().optional()
 });
+const initiatePaymentSchema = Joi.object({
+    orderId: Joi.string().required(),
+    courierName: Joi.string().required(),
+    customerName: Joi.string().required(),
+    customerPhone: Joi.string().required(),
+    pickupPincode: Joi.string().required(),
+    deliveryPincode: Joi.string().required(),
+    weight: Joi.number().min(0).default(0.5),
+    packages: Joi.array()
+        .items(
+            Joi.object({
+                weight: Joi.number().min(0).required(),
+                length: Joi.number().min(0).required(),
+                width: Joi.number().min(0).required(),
+                height: Joi.number().min(0).required()
+            })
+        )
+        .optional()
+});
+
+const verifyPaymentSchema = Joi.object({
+    razorpay_order_id: Joi.string().required(),
+    razorpay_payment_id: Joi.string().required(),
+    razorpay_signature: Joi.string().required()
+});
+
 
 module.exports = {
     createShipmentSchema,
@@ -134,5 +165,7 @@ module.exports = {
     initiateReturnSchema,
     schedulePickupSchema,
     getLocationsSchema,
-    pickupAvailabilitySchema
+    pickupAvailabilitySchema,
+    initiatePaymentSchema,
+    verifyPaymentSchema
 };

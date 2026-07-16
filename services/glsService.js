@@ -85,7 +85,19 @@ function constructParcels(packagesArray) {
     }));
 }
 
-async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = false, packages }) {
+async function fetchRates({ 
+    pickupPincode, 
+    deliveryPincode, 
+    weight = 0.5, 
+    cod = false, 
+    packages,
+    pickupAddress,
+    pickupCity,
+    pickupState,
+    deliveryAddress,
+    deliveryCity,
+    deliveryState
+}) {
     const headers = getAuthHeader();
     const packagesArray = packages && packages.length > 0 ? packages : [{ weight: weight || 0.5 }];
     const totalWeight = packagesArray.reduce((acc, p) => acc + p.weight, 0);
@@ -125,8 +137,8 @@ async function fetchRates({ pickupPincode, deliveryPincode, weight = 0.5, cod = 
         const cleanBilling = GLS_BILLING_ACCOUNT ? GLS_BILLING_ACCOUNT.replace(/"/g, "") : "";
         const response = await axios.post(`${GLS_API_BASE_URL}/rate`, {
             category: "Parcel",
-            sender: constructAddress("Sender", "123 Shipper St", "Montreal", null, pickupPincode),
-            consignee: constructAddress("Consignee", "456 Consignee St", "Toronto", null, deliveryPincode),
+            sender: constructAddress("Sender", pickupAddress || "123 Shipper St", pickupCity || "Montreal", pickupState, pickupPincode),
+            consignee: constructAddress("Consignee", deliveryAddress || "456 Consignee St", deliveryCity || "Toronto", deliveryState, deliveryPincode),
             parcels: constructParcels(packagesArray),
             paymentType: "Prepaid",
             deliveryType: "GRD",
